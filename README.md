@@ -8,13 +8,13 @@ Tasked - a simple project management web app.
 1. Install [bun](https://bun.sh/)
 1. Install [rust](https://rustup.rs/)
 1. Create an empty `tmp` directory in the root of the cloned repo:
-```bash
-mkdir tmp
-```
+  ```bash
+  mkdir tmp
+  ```
 1. Create a `.env` file, replacing "/path/to/your/clone/" with the absolute path to the cloned repo:
-```bash
-echo "DATABASE_URL=sqlite:///path/to/your/clone/tmp/db.sqlite?mode=rwc" > server/.env
-```
+  ```bash
+  echo "DATABASE_URL=sqlite:///path/to/your/clone/tmp/db.sqlite?mode=rwc" > server/.env
+  ```
 
 ## Dev
 
