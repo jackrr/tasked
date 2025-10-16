@@ -1,0 +1,22 @@
+[package]
+name = "tasked"
+authors = ["Jack Ratner"]
+description = "Backend server for tasked app"
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/jackrr/tasked"
+
+[workspace]
+members = [".", "entity", "migration"]
+
+[dependencies]
+anyhow = "1.0.98"
+dotenv = "0.15.0"
+entity = { path = "entity" }
+migration = { path = "migration" }
+rocket = { version = "0.5.1", features = [ "json", "uuid" ] }
+rocket_cors = "0.6.0"
+sea-orm = { version = "2.0.0-rc", features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros" , "debug-print", "with-uuid", "with-chrono" ] }
+serde = "1.0.228"
+uuid = "1.18.1"
