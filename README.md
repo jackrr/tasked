@@ -11,7 +11,7 @@ Tasked - a simple project management web app.
   ```bash
   mkdir tmp
   ```
-1. Create a `.env` file, replacing "/path/to/your/clone/" with the absolute path to the cloned repo:
+5. Create a `.env` file, replacing "/path/to/your/clone/" with the absolute path to the cloned repo:
   ```bash
   echo "DATABASE_URL=sqlite:///path/to/your/clone/tmp/db.sqlite?mode=rwc" > server/.env
   ```
