@@ -16,8 +16,8 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(Project::Id))
                     .col(string(Project::Title))
-                    .col(string(Project::Description))
-                    .col(date_time(Project::CreatedAt))
+                    .col(string_null(Project::Description))
+                    .col(date_time_null(Project::CreatedAt))
                     .to_owned(),
             )
             .await

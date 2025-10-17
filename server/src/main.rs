@@ -2,29 +2,19 @@
 extern crate rocket;
 
 use dotenv::dotenv;
-use entity::project::{Entity as Project, Model as ProjectModel};
 use migration::{Migrator, MigratorTrait};
-use rocket::State;
-use rocket::serde::json::Json;
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use sea_orm::{Database, DatabaseConnection, EntityTrait};
+use sea_orm::Database;
 use std::env;
 
-mod result;
+mod api;
+use api::projects;
 
-struct Db {
-    conn: DatabaseConnection,
-}
+mod result;
 
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
-}
-
-#[get("/projects")]
-async fn projects(db: &State<Db>) -> result::Result<Json<Vec<ProjectModel>>> {
-    let projects = Project::find().all(&db.conn).await?;
-    Ok(Json(projects))
 }
 
 #[rocket::main]
@@ -45,8 +35,9 @@ async fn main() -> anyhow::Result<()> {
 
     let _rocket = rocket::build()
         .attach(cors)
-        .manage(Db { conn })
-        .mount("/", routes![index, projects])
+        .manage(conn)
+        .mount("/projects", projects::routes())
+        .mount("/", routes![index])
         .launch()
         .await?;
 
