@@ -16,6 +16,7 @@ Tasked - a simple project management web app.
   echo "DATABASE_URL=sqlite:///path/to/your/clone/tmp/db.sqlite?mode=rwc" > server/.env
   echo "ALLOWED_ORIGINS=http://localhost:5173" >> server/.env
   ```
+6. Run `bun install` from the `app` directory
 
 ## Dev
 
