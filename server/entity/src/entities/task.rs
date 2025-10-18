@@ -3,12 +3,14 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "project")]
+#[sea_orm(table_name = "task")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub title: String,
+    pub status: String,
     pub description: Option<String>,
+    pub due_date: Option<DateTime>,
     #[sea_orm(default_value = "Expr::current_timestamp()")]
     pub created_at: DateTime,
 }
@@ -25,12 +27,12 @@ impl Related<super::task_project::Entity> for Entity {
     }
 }
 
-impl Related<super::task::Entity> for Entity {
+impl Related<super::project::Entity> for Entity {
     fn to() -> RelationDef {
-        super::task_project::Relation::Task.def()
+        super::task_project::Relation::Project.def()
     }
     fn via() -> Option<RelationDef> {
-        Some(super::task_project::Relation::Project.def().rev())
+        Some(super::task_project::Relation::Task.def().rev())
     }
 }
 

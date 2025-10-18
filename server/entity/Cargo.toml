@@ -10,5 +10,6 @@ name = "entity"
 path = "src/lib.rs"
 
 [dependencies]
-sea-orm = { version = "2.0.0-rc", features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros" ] }
+chrono = "0.4.42"
+sea-orm = { version = "2.0.0-rc", features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros", "with-chrono", "with-uuid" ] }
 serde = "1.0.228"

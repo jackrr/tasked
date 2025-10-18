@@ -30,8 +30,6 @@ async fn create_project(
         title: ActiveValue::Set(project.title.to_owned()),
         ..Default::default()
     };
-    println!("{:?}", project);
-
     let project = project.insert(db.inner()).await?;
 
     Ok(Json(project))

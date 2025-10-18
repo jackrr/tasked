@@ -28,10 +28,9 @@ Tasked - a simple project management web app.
 All the following should be run from within the `server` directory.
 
 1. Install `sea-orm-cli` if you haven't already: `cargo install sea-orm-cli@^2.0.0-rc`
-FIXME: this isn't complete
 1. Generate a migration template file:
 ```bash
-sea-orm-cli migrate generate
+sea-orm-cli migrate generate <your_change>
 ```
 2. Edit the generated file according to the desired schema
 3. Generate the corresponding entity file:

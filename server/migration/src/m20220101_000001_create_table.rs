@@ -1,7 +1,4 @@
-use sea_orm_migration::{
-    prelude::*,
-    schema::{self, *},
-};
+use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -17,7 +14,10 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Project::Id))
                     .col(string(Project::Title))
                     .col(string_null(Project::Description))
-                    .col(date_time_null(Project::CreatedAt))
+                    .col(
+                        date_time(Project::CreatedAt)
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
                     .to_owned(),
             )
             .await
@@ -31,7 +31,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Project {
+pub enum Project {
     Table,
     Id,
     Title,
