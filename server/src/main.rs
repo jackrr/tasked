@@ -11,7 +11,11 @@ use std::env;
 mod api;
 use api::projects;
 
+mod models;
 mod result;
+
+#[cfg(test)]
+mod test_helpers;
 
 #[get("/")]
 fn index() -> &'static str {
@@ -46,28 +50,4 @@ async fn main() -> anyhow::Result<()> {
     rocket.attach(cors).launch().await?;
 
     Ok(())
-}
-
-#[cfg(test)]
-mod test {
-    use super::initialize_rocket;
-    use dotenv::dotenv;
-    use migration::{Migrator, MigratorTrait};
-    use rocket::local::asynchronous::Client;
-    use sea_orm::Database;
-    use std::env;
-
-    pub async fn init_server() -> anyhow::Result<Client> {
-        dotenv().ok();
-        let db_uri = env::var("TEST_DATABASE_URL").unwrap();
-        let conn = Database::connect(db_uri).await?;
-        Migrator::refresh(&conn).await?;
-
-        let rocket = initialize_rocket(conn).await.unwrap();
-        let client = Client::tracked(rocket)
-            .await
-            .expect("valid rocket instance");
-
-        Ok(client)
-    }
 }

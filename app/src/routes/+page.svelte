@@ -2,25 +2,20 @@
 	import { onMount } from 'svelte';
 	import Modal from '$lib/components/modal.svelte';
 	import Input from '$lib/components/input.svelte';
+	import { get, post } from '$lib/api';
 
 	let projects = $state([]);
 	let addingProject = $state(false);
 	let newProjectTitle = $state();
 
 	onMount(async () => {
-		// TODO: configurable base URL
-		const result = await fetch('http://localhost:8000/projects');
-		projects = await result.json();
+		// TODO: fetch stats in follow-on request
+		projects = await get('/projects');
 	});
 
 	async function createProject() {
-		const result = await fetch('http://localhost:8000/projects', {
-			method: 'post',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ title: newProjectTitle })
-		});
+		const newProj = await post('/projects', { title: newProjectTitle });
+		console.log('got project', newProj);
 
 		// FIXME: why doesn't this hide the modal?
 		addingProject = false;
