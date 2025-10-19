@@ -2778,6 +2778,7 @@ dependencies = [
  "rocket_cors",
  "sea-orm",
  "serde",
+ "serde_json",
  "uuid",
 ]
 
