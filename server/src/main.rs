@@ -10,6 +10,7 @@ use std::env;
 
 mod api;
 use api::projects;
+use api::tasks;
 
 mod models;
 mod result;
@@ -26,7 +27,8 @@ async fn initialize_rocket(db_conn: DatabaseConnection) -> anyhow::Result<Rocket
     let rocket = rocket::build()
         .manage(db_conn)
         .mount("/", routes![index])
-        .mount("/", projects::routes());
+        .mount("/", projects::routes())
+        .mount("/", tasks::routes());
 
     Ok(rocket)
 }

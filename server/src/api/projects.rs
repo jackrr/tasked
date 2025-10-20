@@ -1,11 +1,12 @@
 use rocket::serde::json::Json;
 use rocket::{Route, State};
-use sea_orm::{DatabaseConnection, EntityTrait, FromQueryResult, raw_sql};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult, raw_sql};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::models::project::{self, Project, ProjectModel};
-use crate::result::Result;
+use crate::models::task::{self, Task, TaskModel};
+use crate::result::{Error, Result, error_response};
 
 // GET /projects
 //
@@ -72,14 +73,80 @@ async fn create_project(
     Ok(Json(project))
 }
 
+// GET /projects/:id
+//
+// Get project with the given ID
+#[get("/projects/<id>")]
+async fn get_project(id: &str, db: &State<DatabaseConnection>) -> Result<Json<ProjectModel>> {
+    let id = Uuid::parse_str(id).unwrap_or(Uuid::nil());
+    let project = Project::find_by_id(id).one(db.inner()).await?;
+    match project {
+        Some(p) => Ok(Json(p)),
+        // TODO: this should 404
+        None => Err(error_response(format!("Project with id {id:?} not found!"))),
+    }
+}
+
+// GET /projects/:id/tasks
+//
+// Get tasks belonging to project with the given id
+#[get("/projects/<id>/tasks")]
+async fn get_project_tasks(
+    id: &str,
+    db: &State<DatabaseConnection>,
+) -> Result<Json<Vec<TaskModel>>> {
+    let id = Uuid::parse_str(id).unwrap_or(Uuid::nil());
+    let tasks = Task::find()
+        .has_related(Project, project::Id.eq(id))
+        .all(db.inner())
+        .await?;
+
+    Ok(Json(tasks))
+}
+
+// POST /projects/:id/tasks
+//
+// Create a new task and add to project with the given id
+#[derive(Deserialize)]
+struct CreateTaskPayload<'r> {
+    title: &'r str,
+}
+
+#[post("/projects/<id>/tasks", format = "json", data = "<task>")]
+async fn create_task_in_project(
+    id: &str,
+    task: Json<CreateTaskPayload<'_>>,
+    db: &State<DatabaseConnection>,
+) -> Result<Json<TaskModel>> {
+    let id = match Uuid::parse_str(id) {
+        Ok(id) => id,
+        Err(_) => return Err(error_response(format!("Invalid id {id}"))),
+    };
+    let task =
+        task::create_task_in_project(db.inner(), task.title.to_owned(), task::Status::Todo, &id)
+            .await?;
+
+    Ok(Json(task))
+}
+
+// TODO: post projects/:id/add_task?task_id=
+// TODO: post projects/:id/remove_task?task_id=
+
 pub fn routes() -> Vec<Route> {
-    routes![projects, create_project, project_stats]
+    routes![
+        projects,
+        create_project,
+        project_stats,
+        get_project,
+        get_project_tasks,
+        create_task_in_project
+    ]
 }
 
 #[cfg(test)]
 mod test {
     use crate::models::project::{self, ProjectModel};
-    use crate::models::task;
+    use crate::models::task::{self, TaskModel};
     use crate::test_helpers;
     use rocket::http::{ContentType, Status};
     use serde_json;
@@ -115,6 +182,84 @@ mod test {
         let response_str = response.into_string().await.unwrap();
         let project: ProjectModel = serde_json::from_str(&response_str).expect("The Project");
         assert_eq!(project.title, "A new project!");
+    }
+
+    #[rocket::async_test]
+    async fn test_create_task_in_project() {
+        let db = test_helpers::db_conn().await.unwrap();
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+
+        let response = client
+            .post(uri!(super::create_task_in_project(project.id.to_string())))
+            .header(ContentType::JSON)
+            .body(
+                r#"{
+                  "title": "A new task!"
+                }"#,
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let project: TaskModel = serde_json::from_str(&response_str).expect("The task");
+        assert_eq!(project.title, "A new task!");
+    }
+
+    #[rocket::async_test]
+    async fn test_get_project() {
+        let db = test_helpers::db_conn().await.unwrap();
+
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .get(uri!(super::get_project(project.id.to_string())))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let res: ProjectModel = serde_json::from_str(&response_str).expect("A project");
+        assert_eq!(res.id, project.id);
+    }
+
+    #[rocket::async_test]
+    async fn test_get_project_tasks() {
+        let db = test_helpers::db_conn().await.unwrap();
+
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let task = task::create_task_in_project(
+            &db,
+            "Task 1".to_string(),
+            task::Status::Complete,
+            &project.id,
+        )
+        .await
+        .unwrap();
+
+        // Not in project
+        task::create_task(&db, "Other task".to_string(), task::Status::Complete)
+            .await
+            .unwrap();
+
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .get(uri!(super::get_project_tasks(project.id.to_string())))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let res: Vec<TaskModel> = serde_json::from_str(&response_str).expect("Task list");
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].id, task.id);
     }
 
     #[rocket::async_test]

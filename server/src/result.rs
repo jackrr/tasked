@@ -20,3 +20,7 @@ impl<'r> Responder<'r, 'r> for Error {
         response::Debug(self.0).respond_to(request)
     }
 }
+
+pub fn error_response(msg: String) -> Error {
+    Error(anyhow::Error::msg(msg))
+}
