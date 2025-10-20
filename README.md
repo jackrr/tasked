@@ -14,15 +14,14 @@ Tasked - a simple project management web app.
 5. Create a `.env` file, replacing "/path/to/your/clone/" with the absolute path to the cloned repo:
   ```bash
   echo "DATABASE_URL=sqlite:///path/to/your/clone/tmp/db.sqlite?mode=rwc" > server/.env
-  echo "TEST_DATABASE_URL=sqlite:///path/to/your/clone/tmp/test_db.sqlite?mode=rwc" >> server/.env
-  echo "ALLOWED_ORIGINS=http://localhost:5173" >> server/.env
+  echo "ALLOWED_ORIGINS=http://localhost:3000" >> server/.env
   ```
 6. Run `bun install` from the `app` directory
 
 ## Dev
 
 1. Start the Rust server with by running `cargo run` from the `server` directory
-1. Start the Svelte dev server by running `bun dev` from the `app` directory
+1. Start the Next.js dev server by running `bun dev` from the `app` directory
 
 ## Adding entities
 
