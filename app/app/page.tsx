@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
+
 import { fetchProjects, createProject } from "@/app/api";
 import Modal from "@/app/components/modal";
 import Button from "@/app/components/button";
 import Input from "@/app/components/input";
+import { usePageTitle } from "./hooks";
 
 export default function Home() {
+  usePageTitle("All Projects");
+
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: fetchProjects,

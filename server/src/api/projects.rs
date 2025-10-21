@@ -113,7 +113,7 @@ async fn get_project_tasks(
 ) -> Result<Json<Vec<TaskModel>>> {
     let id = parse_uuid(id)?;
     let tasks = Task::find()
-        .has_related(Project, project::Id.eq(id))
+        .has_related(Project, project::Column::Id.eq(id))
         .all(db.inner())
         .await?;
 

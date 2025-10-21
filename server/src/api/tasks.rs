@@ -3,11 +3,10 @@ use rocket::{Route, State};
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 
 use super::helpers::parse_uuid;
+use crate::models::project::{Project, ProjectModel};
 use crate::models::task::{self, EditTaskPayload, Task, TaskModel};
 use crate::result::{Result, error_response};
 
-// GET /tasks/:id
-//
 // Get task with the given ID
 #[get("/tasks/<id>")]
 async fn get_task(id: &str, db: &State<DatabaseConnection>) -> Result<Json<TaskModel>> {
@@ -20,8 +19,21 @@ async fn get_task(id: &str, db: &State<DatabaseConnection>) -> Result<Json<TaskM
     }
 }
 
-// DELETE /tasks/:id
-//
+// Get projects belonging to task with the given id
+#[get("/tasks/<id>/projects")]
+async fn get_task_projects(
+    id: &str,
+    db: &State<DatabaseConnection>,
+) -> Result<Json<Vec<ProjectModel>>> {
+    let id = parse_uuid(id)?;
+    let tasks = Project::find()
+        .has_related(Task, task::Column::Id.eq(id))
+        .all(db.inner())
+        .await?;
+
+    Ok(Json(tasks))
+}
+
 // Delete task with the given ID
 #[delete("/tasks/<id>")]
 async fn delete_task(id: &str, db: &State<DatabaseConnection>) -> Result<()> {
@@ -30,8 +42,6 @@ async fn delete_task(id: &str, db: &State<DatabaseConnection>) -> Result<()> {
     Ok(())
 }
 
-// PATCH tasks/:id
-//
 // Edit field<>value pair(s) on task
 #[patch("/tasks/<id>", format = "json", data = "<task>")]
 async fn edit_task(
@@ -44,8 +54,6 @@ async fn edit_task(
     Ok(Json(task))
 }
 
-// POST tasks/:id/clear_fields
-//
 // Clear fields listed in query param
 #[post("/tasks/<id>/clear_fields?<fields>")]
 async fn clear_task_fields(
@@ -59,8 +67,6 @@ async fn clear_task_fields(
     Ok(Json(task))
 }
 
-// GET tasks?search=
-//
 // Search tasks by "search" text in query
 #[get("/tasks?<search>")]
 async fn search_tasks(
@@ -83,6 +89,7 @@ async fn search_tasks(
 pub fn routes() -> Vec<Route> {
     routes![
         get_task,
+        get_task_projects,
         delete_task,
         edit_task,
         clear_task_fields,
@@ -92,6 +99,7 @@ pub fn routes() -> Vec<Route> {
 
 #[cfg(test)]
 mod test {
+    use crate::models::project::{self, ProjectModel};
     use crate::models::task::{self, TaskActiveModel, TaskModel};
     use crate::test_helpers;
     use rocket::http::{ContentType, Status};
@@ -117,6 +125,40 @@ mod test {
         let response_str = response.into_string().await.unwrap();
         let res: TaskModel = serde_json::from_str(&response_str).expect("A task");
         assert_eq!(res.id, task.id);
+    }
+
+    #[rocket::async_test]
+    async fn test_get_task_projects() {
+        let db = test_helpers::db_conn().await.unwrap();
+
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let task = task::create_task_in_project(
+            &db,
+            "Task 1".to_string(),
+            task::Status::Complete,
+            &project.id,
+        )
+        .await
+        .unwrap();
+
+        // Not in project
+        project::create_project(&db, "Other project".to_string())
+            .await
+            .unwrap();
+
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .get(uri!(super::get_task_projects(task.id.to_string())))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let res: Vec<ProjectModel> = serde_json::from_str(&response_str).expect("Project list");
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].id, project.id);
     }
 
     #[rocket::async_test]

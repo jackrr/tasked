@@ -5,7 +5,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 pub use entity::project::{
-    ActiveModel as ProjectActiveModel, Column::Id, Entity as Project, Model as ProjectModel,
+    ActiveModel as ProjectActiveModel, Column, Entity as Project, Model as ProjectModel,
 };
 
 pub async fn create_project(db: &DatabaseConnection, title: String) -> Result<ProjectModel> {
