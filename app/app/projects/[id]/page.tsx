@@ -26,6 +26,7 @@ export default function Project() {
     select: (tasks) =>
       tasks.sort((a, b) => {
         // TODO: verify this sort logic
+        // TODO: hide this complexity
         let bigger;
         if (a.status === b.status) {
           if (a.dueDate === b.dueDate) {
@@ -76,7 +77,7 @@ export default function Project() {
       <ul>
         {tasks?.map((t) => (
           <li key={t.id}>
-            <div aria-role="button" onClick={() => setSelectedTask(t.id)}>
+            <div role="button" onClick={() => setSelectedTask(t.id)}>
               <p>{t.title}</p>
               {t.dueDate && formatRelative(t.dueDate, new Date())}
               <div>{t.status}</div>

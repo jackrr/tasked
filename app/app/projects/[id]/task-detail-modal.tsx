@@ -48,7 +48,7 @@ export default function TaskDetailModal({
       {projects?.map((p) => (
         <div
           key={p.id}
-          aria-role="button"
+          role="button"
           onClick={() => removeProject.mutate({ taskId, projectId: p.id })}
         >
           {p.title}
