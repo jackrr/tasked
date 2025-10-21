@@ -10,8 +10,6 @@ use crate::result::{Result, error_response};
 
 use super::helpers::parse_uuid;
 
-// GET /projects
-//
 // Get task counts for projects with ids specified in query
 #[get("/projects")]
 async fn projects(db: &State<DatabaseConnection>) -> Result<Json<Vec<ProjectModel>>> {
@@ -19,8 +17,6 @@ async fn projects(db: &State<DatabaseConnection>) -> Result<Json<Vec<ProjectMode
     Ok(Json(projects))
 }
 
-// GET /projects/stats
-//
 // Get task counts for projects with ids specified in query
 #[derive(Debug, PartialEq, Deserialize, Serialize, FromQueryResult)]
 struct ProjectStats {
@@ -57,8 +53,6 @@ async fn project_stats(
     Ok(Json(stats))
 }
 
-// POST /projects
-//
 // Create a new project with the given title
 #[derive(Deserialize)]
 struct CreateProjectPayload<'r> {
@@ -75,8 +69,6 @@ async fn create_project(
     Ok(Json(project))
 }
 
-// GET /projects/:id
-//
 // Get project with the given ID
 #[get("/projects/<id>")]
 async fn get_project(id: &str, db: &State<DatabaseConnection>) -> Result<Json<ProjectModel>> {
@@ -89,8 +81,6 @@ async fn get_project(id: &str, db: &State<DatabaseConnection>) -> Result<Json<Pr
     }
 }
 
-// PATCH projects/:id
-//
 // Edit field<>value pair(s) on project
 #[patch("/projects/<id>", format = "json", data = "<project>")]
 async fn edit_project(
@@ -103,8 +93,6 @@ async fn edit_project(
     Ok(Json(project))
 }
 
-// GET /projects/:id/tasks
-//
 // Get tasks belonging to project with the given id
 #[get("/projects/<id>/tasks")]
 async fn get_project_tasks(
@@ -120,8 +108,6 @@ async fn get_project_tasks(
     Ok(Json(tasks))
 }
 
-// POST /projects/:id/tasks
-//
 // Create a new task and add to project with the given id
 #[derive(Deserialize)]
 struct CreateTaskPayload<'r> {
@@ -142,8 +128,6 @@ async fn create_task_in_project(
     Ok(Json(task))
 }
 
-// POST /projects/:id/add_task?task_id=
-//
 // Associate a task to a project.
 // Preserves any pre-existing project associations for the task.
 #[post("/projects/<project_id>/add_task?<task_id>")]
@@ -158,8 +142,6 @@ async fn add_task_to_project(
     Ok(())
 }
 
-// POST /projects/:id/remove_task?task_id=
-//
 // Dissociate a task from a project.
 // Preserves any other project associations.
 #[post("/projects/<project_id>/remove_task?<task_id>")]

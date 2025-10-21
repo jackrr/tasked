@@ -147,6 +147,25 @@ export async function addTaskToProject({
   });
 }
 
+export async function persistProjectField({
+  projectId,
+  field,
+  value,
+}: {
+  projectId: string;
+  field: string;
+  value: string;
+}) {
+  console.log({ projectId, field, value });
+  await fetch(`${BASE_URL}/projects/${projectId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ [field]: value }),
+  });
+}
+
 export async function removeTaskFromProject({
   taskId,
   projectId,

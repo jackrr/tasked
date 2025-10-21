@@ -1,17 +1,10 @@
 export default function Input({
   onChange,
-  initialValue,
-  placeholder,
-}: {
-  onChange: (v: string) => void;
-  initialValue?: string;
-  placeholder?: string;
+  ...rest
+}: Omit<React.HTMLProps<HTMLInputElement>, "onChange"> & {
+  onChange?: (v: string) => void;
 }) {
   return (
-    <input
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      // initialValue={initialValue}
-    />
+    <input {...rest} onChange={(e) => onChange && onChange(e.target.value)} />
   );
 }

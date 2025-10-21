@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { formatRelative } from "date-fns";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { usePageTitle } from "@/app/hooks";
 import Button from "@/app/components/button";
 import AddTaskModal from "./add-task-modal";
 import TaskDetailModal from "./task-detail-modal";
+import { Title, Description } from "./fields";
 
 export default function Project() {
   const { id } = useParams<{ id: string }>();
@@ -56,7 +57,8 @@ export default function Project() {
   return (
     <>
       <Link href={"/"}>{"<-"}</Link>
-      <h1>{project?.title}</h1>
+      <Title value={project?.title} projectId={id} />
+      <Description value={project?.description} projectId={id} />
       <p>{project?.description}</p>
       <Button onClick={() => setAddingTask(true)}>+ Add task</Button>
       <AddTaskModal
