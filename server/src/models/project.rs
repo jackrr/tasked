@@ -1,11 +1,12 @@
 use anyhow::Result;
-pub use entity::project::{
-    ActiveModel as ProjectActiveModel, Column::Id, Entity as Project, Model as ProjectModel,
-};
 use rocket::serde::json::Json;
 use sea_orm::{ActiveModelTrait, ActiveValue, DatabaseConnection};
 use serde::Deserialize;
 use uuid::Uuid;
+
+pub use entity::project::{
+    ActiveModel as ProjectActiveModel, Column::Id, Entity as Project, Model as ProjectModel,
+};
 
 pub async fn create_project(db: &DatabaseConnection, title: String) -> Result<ProjectModel> {
     let proj = ProjectActiveModel {

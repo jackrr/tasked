@@ -1,10 +1,14 @@
 use anyhow::{Error, Result};
 use rocket::serde::json::Json;
+use sea_orm::prelude::Date;
 use sea_orm::{ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 use serde::Deserialize;
+use std::collections::HashSet;
 use uuid::Uuid;
 
-pub use entity::task::{ActiveModel as TaskActiveModel, Entity as Task, Model as TaskModel};
+pub use entity::task::{
+    ActiveModel as TaskActiveModel, Column, Entity as Task, Model as TaskModel,
+};
 pub use entity::task_project::{
     ActiveModel as TaskProjectActiveModel, Entity as TaskProject, Model as TaskProjectModel,
 };
@@ -64,7 +68,7 @@ pub struct EditTaskPayload<'r> {
 pub async fn edit_task(
     db: &DatabaseConnection,
     id: &Uuid,
-    payload: Json<EditTasktPayload<'_>>,
+    payload: Json<EditTaskPayload<'_>>,
 ) -> Result<TaskModel> {
     let task = TaskActiveModel {
         id: ActiveValue::Set(id.clone()),
@@ -81,15 +85,73 @@ pub async fn edit_task(
             Some(status) => ActiveValue::Set(Status::parse(status)?.to_string()),
             None => ActiveValue::NotSet,
         },
-        // due_date: match payload.due_date {
-        //     // Parse and re-stringify to validate
-        //     Some(due_date) => ActiveValue::Set(Status::parse(status)?.to_string()),
-        //     None => ActiveValue::NotSet,
-        // },
+        due_date: match payload.due_date {
+            Some(due_date) => ActiveValue::Set(Some(Date::parse_from_str(due_date, "%Y-%m-%d")?)),
+            None => ActiveValue::NotSet,
+        },
         ..Default::default()
     };
     let task = task.update(db).await?;
 
+    Ok(task)
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum ClearableField {
+    DueDate,
+    Description,
+}
+
+impl ClearableField {
+    pub fn from_field_strs(field_strs: Vec<&str>) -> Result<HashSet<Self>> {
+        let mut results = HashSet::with_capacity(2);
+        for s in field_strs {
+            match Self::from(s) {
+                Ok(v) => results.insert(v),
+                Err(e) => return Err(e),
+            };
+        }
+
+        Ok(results)
+    }
+
+    pub fn from(s: &str) -> Result<Self> {
+        let res = match s {
+            "due_date" => ClearableField::DueDate,
+            "description" => ClearableField::Description,
+            _ => return Err(Error::msg(format!("Field not clearable on task: {s}"))),
+        };
+
+        Ok(res)
+    }
+}
+
+pub async fn clear_fields(
+    db: &DatabaseConnection,
+    id: &Uuid,
+    fields: HashSet<ClearableField>,
+) -> Result<TaskModel> {
+    let description = if fields.contains(&ClearableField::Description) {
+        ActiveValue::Set(None)
+    } else {
+        ActiveValue::NotSet
+    };
+    let due_date = if fields.contains(&ClearableField::DueDate) {
+        ActiveValue::Set(None)
+    } else {
+        ActiveValue::NotSet
+    };
+
+    let task = TaskActiveModel {
+        id: ActiveValue::Set(id.clone()),
+        title: ActiveValue::NotSet,
+        status: ActiveValue::NotSet,
+        description: description,
+        due_date: due_date,
+        ..Default::default()
+    };
+
+    let task = task.update(db).await?;
     Ok(task)
 }
 
