@@ -4,9 +4,11 @@ use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult, raw
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::project::{self, Project, ProjectModel};
+use crate::models::project::{self, EditProjectPayload, Project, ProjectModel};
 use crate::models::task::{self, Task, TaskModel};
-use crate::result::{Error, Result, error_response};
+use crate::result::{Result, error_response};
+
+use super::helpers::parse_uuid;
 
 // GET /projects
 //
@@ -78,13 +80,27 @@ async fn create_project(
 // Get project with the given ID
 #[get("/projects/<id>")]
 async fn get_project(id: &str, db: &State<DatabaseConnection>) -> Result<Json<ProjectModel>> {
-    let id = Uuid::parse_str(id).unwrap_or(Uuid::nil());
+    let id = parse_uuid(id)?;
     let project = Project::find_by_id(id).one(db.inner()).await?;
     match project {
         Some(p) => Ok(Json(p)),
         // TODO: this should 404
         None => Err(error_response(format!("Project with id {id:?} not found!"))),
     }
+}
+
+// PATCH projects/:id
+//
+// Edit field<>value pair(s) on project
+#[patch("/projects/<id>", format = "json", data = "<project>")]
+async fn edit_project(
+    id: &str,
+    project: Json<EditProjectPayload<'_>>,
+    db: &State<DatabaseConnection>,
+) -> Result<Json<ProjectModel>> {
+    let id = parse_uuid(id)?;
+    let project = project::edit_project(db.inner(), &id, project).await?;
+    Ok(Json(project))
 }
 
 // GET /projects/:id/tasks
@@ -95,7 +111,7 @@ async fn get_project_tasks(
     id: &str,
     db: &State<DatabaseConnection>,
 ) -> Result<Json<Vec<TaskModel>>> {
-    let id = Uuid::parse_str(id).unwrap_or(Uuid::nil());
+    let id = parse_uuid(id)?;
     let tasks = Task::find()
         .has_related(Project, project::Id.eq(id))
         .all(db.inner())
@@ -118,10 +134,7 @@ async fn create_task_in_project(
     task: Json<CreateTaskPayload<'_>>,
     db: &State<DatabaseConnection>,
 ) -> Result<Json<TaskModel>> {
-    let id = match Uuid::parse_str(id) {
-        Ok(id) => id,
-        Err(_) => return Err(error_response(format!("Invalid id {id}"))),
-    };
+    let id = parse_uuid(id)?;
     let task =
         task::create_task_in_project(db.inner(), task.title.to_owned(), task::Status::Todo, &id)
             .await?;
@@ -129,17 +142,49 @@ async fn create_task_in_project(
     Ok(Json(task))
 }
 
-// TODO: post projects/:id/add_task?task_id=
-// TODO: post projects/:id/remove_task?task_id=
+// POST /projects/:id/add_task?task_id=
+//
+// Associate a task to a project.
+// Preserves any pre-existing project associations for the task.
+#[post("/projects/<project_id>/add_task?<task_id>")]
+async fn add_task_to_project(
+    project_id: &str,
+    task_id: &str,
+    db: &State<DatabaseConnection>,
+) -> Result<()> {
+    let project_id = parse_uuid(project_id)?;
+    let task_id = parse_uuid(task_id)?;
+    task::add_to_project(db.inner(), &task_id, &project_id).await?;
+    Ok(())
+}
+
+// POST /projects/:id/remove_task?task_id=
+//
+// Dissociate a task from a project.
+// Preserves any other project associations.
+#[post("/projects/<project_id>/remove_task?<task_id>")]
+async fn remove_task_from_project(
+    project_id: &str,
+    task_id: &str,
+    db: &State<DatabaseConnection>,
+) -> Result<()> {
+    let project_id = parse_uuid(project_id)?;
+    let task_id = parse_uuid(task_id)?;
+    task::remove_from_project(db.inner(), &task_id, &project_id).await?;
+    Ok(())
+}
 
 pub fn routes() -> Vec<Route> {
     routes![
         projects,
         create_project,
+        edit_project,
         project_stats,
         get_project,
         get_project_tasks,
-        create_task_in_project
+        create_task_in_project,
+        add_task_to_project,
+        remove_task_from_project
     ]
 }
 
@@ -185,6 +230,32 @@ mod test {
     }
 
     #[rocket::async_test]
+    async fn test_edit_project() {
+        let db = test_helpers::db_conn().await.unwrap();
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .patch(uri!(super::edit_project(project.id.to_string())))
+            .header(ContentType::JSON)
+            .body(
+                r#"{
+                  "title": "New Name!!",
+                  "description": "A description!"
+                }"#,
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let project: ProjectModel = serde_json::from_str(&response_str).expect("The Project");
+        assert_eq!(project.title, "New Name!!");
+        assert_eq!(project.description, Some("A description!".to_string()));
+    }
+
+    #[rocket::async_test]
     async fn test_create_task_in_project() {
         let db = test_helpers::db_conn().await.unwrap();
         let project = project::create_project(&db, "A project".to_string())
@@ -207,6 +278,57 @@ mod test {
         let response_str = response.into_string().await.unwrap();
         let project: TaskModel = serde_json::from_str(&response_str).expect("The task");
         assert_eq!(project.title, "A new task!");
+    }
+
+    #[rocket::async_test]
+    async fn test_add_task_to_project() {
+        let db = test_helpers::db_conn().await.unwrap();
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let task = task::create_task(&db, "Task".to_string(), task::Status::InProgress)
+            .await
+            .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+
+        let response = client
+            .post(uri!(super::add_task_to_project(
+                project.id.to_string(),
+                task.id.to_string()
+            )))
+            .dispatch()
+            .await;
+
+        // FIXME: add ability to access db after API call to verify side effects
+        assert_eq!(response.status(), Status::Ok);
+    }
+
+    #[rocket::async_test]
+    async fn test_remove_task_from_project() {
+        let db = test_helpers::db_conn().await.unwrap();
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let task = task::create_task_in_project(
+            &db,
+            "Task".to_string(),
+            task::Status::InProgress,
+            &project.id,
+        )
+        .await
+        .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+
+        let response = client
+            .post(uri!(super::remove_task_from_project(
+                project.id.to_string(),
+                task.id.to_string()
+            )))
+            .dispatch()
+            .await;
+
+        // FIXME: add ability to access db after API call to verify side effects
+        assert_eq!(response.status(), Status::Ok);
     }
 
     #[rocket::async_test]
