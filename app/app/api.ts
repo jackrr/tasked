@@ -10,8 +10,10 @@ type ProjectResponse = {
 
 type ProjectStatsResponse = {
   id: string;
-  total_tasks: number;
-  completed_tasks: number;
+  total: number;
+  in_progress: number;
+  todo: number;
+  complete: number;
 };
 
 type Project = {
@@ -49,8 +51,10 @@ type Task = {
 };
 
 type ProjectWithStats = Project & {
-  totalTasks: number;
-  completedTasks: number;
+  total: number;
+  complete: number;
+  todo: number;
+  inProgress: number;
 };
 
 function deserializeProject(p: ProjectResponse): Project {
@@ -86,11 +90,13 @@ export async function fetchProjects(): Promise<ProjectWithStats[]> {
   const stats = (await statsRes.json()) as ProjectStatsResponse[];
 
   return stats
-    .sort((a, b) => a.total_tasks - b.total_tasks)
+    .sort((a, b) => a.total - b.total)
     .map((s) => ({
       ...(projects.find((p) => p.id === s.id) as Project), // assume always have match
-      totalTasks: s.total_tasks,
-      completedTasks: s.completed_tasks,
+      total: s.total,
+      complete: s.complete,
+      todo: s.todo,
+      inProgress: s.in_progress,
     }));
 }
 
@@ -154,9 +160,9 @@ export async function persistProjectField({
 }: {
   projectId: string;
   field: string;
-  value: string;
+  value: any;
 }) {
-  console.log({ projectId, field, value });
+  console.log("PERSISTING PROJECT FIELD", { projectId, field, value });
   await fetch(`${BASE_URL}/projects/${projectId}`, {
     method: "PATCH",
     headers: {

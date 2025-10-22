@@ -21,8 +21,10 @@ async fn projects(db: &State<DatabaseConnection>) -> Result<Json<Vec<ProjectMode
 #[derive(Debug, PartialEq, Deserialize, Serialize, FromQueryResult)]
 struct ProjectStats {
     id: Uuid,
-    completed_tasks: u32,
-    total_tasks: u32,
+    complete: u32,
+    in_progress: u32,
+    todo: u32,
+    total: u32,
 }
 
 #[get("/projects/stats?<ids>")]
@@ -37,11 +39,22 @@ async fn project_stats(
 
     let stats: Vec<ProjectStats> = ProjectStats::find_by_statement(raw_sql!(
         Sqlite,
-        r#"SELECT p.id as id, count(distinct ct.id) as completed_tasks, count(distinct t.id) as total_tasks
+        r#"SELECT p.id as id,
+             count(distinct ct.id) as complete,
+             count(distinct it.id) as in_progress,
+             count(distinct tt.id) as todo,
+             count(distinct t.id) as total
            FROM project p
+           -- complete tasks
            LEFT JOIN task_project ctp on ctp.project_id = p.id
-           LEFT JOIN task_project tp on tp.project_id = p.id
            LEFT JOIN task ct on ctp.task_id = ct.id and ct.status = 'complete'
+           -- todo tasks
+           LEFT JOIN task_project ttp on ttp.project_id = p.id
+           LEFT JOIN task tt on ttp.task_id = tt.id and tt.status = 'todo'
+           -- in_progress tasks
+           LEFT JOIN task_project itp on itp.project_id = p.id
+           LEFT JOIN task it on itp.task_id = it.id and it.status = 'in_progress'
+           LEFT JOIN task_project tp on tp.project_id = p.id
            LEFT JOIN task t on tp.task_id = t.id
            WHERE "p"."id" IN ({..ids})
            GROUP BY p.id
@@ -370,7 +383,7 @@ mod test {
     async fn test_project_stats() {
         let db = test_helpers::db_conn().await.unwrap();
 
-        let proj_two_complete = project::create_project(&db, "Project 2/2 completed".to_string())
+        let proj_two_complete = project::create_project(&db, "Project 0/0/2".to_string())
             .await
             .unwrap();
         task::create_task_in_project(
@@ -390,7 +403,7 @@ mod test {
         .await
         .unwrap();
 
-        let proj_one_complete = project::create_project(&db, "Project 1/2 completed".to_string())
+        let proj_one_complete = project::create_project(&db, "Project 1/0/1".to_string())
             .await
             .unwrap();
         task::create_task_in_project(
@@ -410,9 +423,21 @@ mod test {
         .await
         .unwrap();
 
-        let empty_project = project::create_project(&db, "Empty Project".to_string())
+        let empty_project = project::create_project(&db, "Project 0/0/0".to_string())
             .await
             .unwrap();
+
+        let in_progress_proj = project::create_project(&db, "Project 0/1/0".to_string())
+            .await
+            .unwrap();
+        task::create_task_in_project(
+            &db,
+            "Task 4".to_string(),
+            task::Status::InProgress,
+            &in_progress_proj.id,
+        )
+        .await
+        .unwrap();
 
         let client = test_helpers::init_server(Some(db)).await.unwrap();
         let response = client
@@ -420,6 +445,7 @@ mod test {
                 proj_two_complete.id.to_string(),
                 proj_one_complete.id.to_string(),
                 empty_project.id.to_string(),
+                in_progress_proj.id.to_string()
             ])))
             .dispatch()
             .await;
@@ -427,6 +453,6 @@ mod test {
         assert_eq!(response.status(), Status::Ok);
         let response_str = response.into_string().await.unwrap();
         let res: Vec<ProjectStats> = serde_json::from_str(&response_str).expect("List of stats");
-        assert_eq!(res.len(), 3);
+        assert_eq!(res.len(), 4);
     }
 }

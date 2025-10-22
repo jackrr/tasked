@@ -7,5 +7,12 @@ export default function Button({
   children: ReactNode;
   onClick: () => void;
 }) {
-  return <button onClick={onClick}>{children}</button>;
+  return (
+    <button
+      className="cursor-pointer px-2 py-1 border border-(--color-foreground) rounded-xs"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
 }

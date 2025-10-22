@@ -8,6 +8,7 @@ import { fetchProjects, createProject } from "@/app/api";
 import Modal from "@/app/components/modal";
 import Button from "@/app/components/button";
 import Input from "@/app/components/input";
+import { ProjectTitle } from "@/app/components/field";
 import { usePageTitle } from "./hooks";
 
 export default function Home() {
@@ -29,16 +30,25 @@ export default function Home() {
   if (isLoading) return null;
 
   return (
-    <>
-      <h1>All projects</h1>
-      <ul>
+    <div className="px-4">
+      <ul className="w-full">
         {projects &&
           projects.map((p) => (
-            <li key={p.id}>
+            <li key={p.id} className="py-2 grid gap-x-2 grid-cols-[1fr_90px]">
+              <ProjectTitle value={p.title} projectId={p.id} />
               <Link href={`/projects/${p.id}`}>
-                <div>{p.title}</div>
-                <div>
-                  {p.completedTasks}/{p.totalTasks}
+                <div className="grid grid-cols-2 gap-x-2">
+                  <div className="grid gap-x-1 grid-cols-3">
+                    <span className="text-(--color-todo)">{p.todo}</span>
+                    <span className="text-(--color-in-progress)">
+                      {p.inProgress}
+                    </span>
+                    <span className="text-(--color-complete)">
+                      {p.complete}
+                    </span>
+                  </div>
+
+                  <em>more...</em>
                 </div>
               </Link>
             </li>
@@ -56,6 +66,6 @@ export default function Home() {
           Save
         </Button>
       </Modal>
-    </>
+    </div>
   );
 }
