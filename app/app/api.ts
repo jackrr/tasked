@@ -16,13 +16,6 @@ type ProjectStatsResponse = {
   complete: number;
 };
 
-type Project = {
-  id: string;
-  title: string;
-  description?: string;
-  createdAt: Date;
-};
-
 type TaskResponse = {
   id: string;
   title: string;
@@ -41,7 +34,14 @@ Object.freeze(TaskStatus);
 type TaskStatusServer = keyof typeof TaskStatus;
 type TaskStatusUser = (typeof TaskStatus)[TaskStatusServer];
 
-type Task = {
+export type Project = {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: Date;
+};
+
+export type Task = {
   id: string;
   title: string;
   status: TaskStatusUser;
@@ -50,7 +50,7 @@ type Task = {
   createdAt: Date;
 };
 
-type ProjectWithStats = Project & {
+export type ProjectWithStats = Project & {
   total: number;
   complete: number;
   todo: number;
@@ -89,15 +89,13 @@ export async function fetchProjects(): Promise<ProjectWithStats[]> {
   );
   const stats = (await statsRes.json()) as ProjectStatsResponse[];
 
-  return stats
-    .sort((a, b) => a.total - b.total)
-    .map((s) => ({
-      ...(projects.find((p) => p.id === s.id) as Project), // assume always have match
-      total: s.total,
-      complete: s.complete,
-      todo: s.todo,
-      inProgress: s.in_progress,
-    }));
+  return stats.map((s) => ({
+    ...(projects.find((p) => p.id === s.id) as Project), // assume always have match
+    total: s.total,
+    complete: s.complete,
+    todo: s.todo,
+    inProgress: s.in_progress,
+  }));
 }
 
 export async function fetchProject(id: string): Promise<Project> {
@@ -108,6 +106,16 @@ export async function fetchProject(id: string): Promise<Project> {
 export async function fetchTask(id: string): Promise<Task> {
   const res = await fetch(`${BASE_URL}/tasks/${id}`);
   return deserializeTask((await res.json()) as TaskResponse);
+}
+
+export async function deleteProject(id: string): Promise<null> {
+  await fetch(`${BASE_URL}/projects/${id}`, { method: "delete" });
+  return null;
+}
+
+export async function deleteTask(id: string): Promise<null> {
+  await fetch(`${BASE_URL}/tasks/${id}`, { method: "delete" });
+  return null;
 }
 
 export async function fetchTaskProjects(id: string): Promise<Project[]> {

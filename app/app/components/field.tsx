@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { persistProjectField } from "@/app/api";
 import { useDebounce } from "../hooks";
+
+const DELETE_KEYS = new Set(["Backspace", "Delete"]);
 
 function useProjectFieldPersistence<T>({
   projectId,
@@ -37,20 +39,41 @@ function useProjectFieldPersistence<T>({
 }
 
 export function ProjectTitle({
+  big,
   value,
   projectId,
+  focused,
+  onDelete,
 }: {
+  big?: boolean;
   value?: string;
   projectId: string;
+  focused?: boolean;
+  onDelete: () => void;
 }) {
   const { onChange } = useProjectFieldPersistence({
     projectId,
     field: "title",
     value,
   });
+  const input = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focused) input.current?.focus();
+  }, [focused]);
+
+  function handleKeyDown(key: string) {
+    if (input.current?.value?.length === 0 && DELETE_KEYS.has(key)) onDelete();
+  }
 
   return (
-    <input defaultValue={value} onChange={(e) => onChange(e.target.value)} />
+    <input
+      className={`w-full outline-none ${big ? "text-xl" : "text-md"}`}
+      ref={input}
+      defaultValue={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => handleKeyDown(e.key)}
+    />
   );
 }
 
@@ -63,14 +86,17 @@ export function ProjectDescription({
 }) {
   const { onChange } = useProjectFieldPersistence({
     projectId,
-    field: "title",
+    field: "description",
     value,
   });
 
+  // TODO: prevent resize
   return (
     <textarea
+      className="w-full outline-none border-b-2"
+      placeholder="Description for your project..."
       defaultValue={value || ""}
-      onBlur={(e) => onChange(e.target.value)}
+      onChange={(e) => onChange(e.target.value)}
     ></textarea>
   );
 }

@@ -30,10 +30,14 @@ export default function TaskDetailModal({
     mutationFn: removeTaskFromProject,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project_tasks", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 
   if (!task) return null;
+
+  // TODO: inline editing of title and description
+  // TODO: button to delete task w/ confirm prompt
 
   return (
     <Modal {...modalProps}>

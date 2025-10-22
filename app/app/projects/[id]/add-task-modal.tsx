@@ -23,18 +23,11 @@ export default function AddTaskModal({
   const [title, setTitle] = useState("");
   const queryClient = useQueryClient();
 
-  const createTask = useMutation({
-    mutationFn: createTaskInProject,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project_tasks", projectId] });
-      toggleOpen(false);
-    },
-  });
-
   const selectTask = useMutation({
     mutationFn: addTaskToProject,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project_tasks", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       toggleOpen(false);
     },
   });
@@ -50,9 +43,7 @@ export default function AddTaskModal({
     <Modal {...modalProps} toggleOpen={toggleOpen}>
       <h1>Add task to '{projectTitle}'</h1>
       <Input onChange={setTitle} placeholder={"Task name..."} />
-      <Button onClick={() => title && createTask.mutate({ title, projectId })}>
-        Create Task
-      </Button>
+
       {tasks?.map((t) =>
         projectTaskIds.has(t.id) ? (
           <div key={t.id}>

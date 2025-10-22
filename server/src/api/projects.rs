@@ -1,6 +1,6 @@
 use rocket::serde::json::Json;
 use rocket::{Route, State};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult, raw_sql};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult, QueryOrder, raw_sql};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,7 +13,10 @@ use super::helpers::parse_uuid;
 // Get task counts for projects with ids specified in query
 #[get("/projects")]
 async fn projects(db: &State<DatabaseConnection>) -> Result<Json<Vec<ProjectModel>>> {
-    let projects = Project::find().all(db.inner()).await?;
+    let projects = Project::find()
+        .order_by_desc(project::Column::CreatedAt)
+        .all(db.inner())
+        .await?;
     Ok(Json(projects))
 }
 
@@ -57,7 +60,8 @@ async fn project_stats(
            LEFT JOIN task_project tp on tp.project_id = p.id
            LEFT JOIN task t on tp.task_id = t.id
            WHERE "p"."id" IN ({..ids})
-           GROUP BY p.id
+           GROUP BY p.id, p.created_at
+           ORDER BY p.created_at
         "#
     ))
     .all(db.inner())
@@ -104,6 +108,14 @@ async fn edit_project(
     let id = parse_uuid(id)?;
     let project = project::edit_project(db.inner(), &id, project).await?;
     Ok(Json(project))
+}
+
+// Delete project with the given ID
+#[delete("/projects/<id>")]
+async fn delete_project(id: &str, db: &State<DatabaseConnection>) -> Result<()> {
+    let id = parse_uuid(id)?;
+    Project::delete_by_id(id).exec(db.inner()).await?;
+    Ok(())
 }
 
 // Get tasks belonging to project with the given id
@@ -174,6 +186,7 @@ pub fn routes() -> Vec<Route> {
         projects,
         create_project,
         edit_project,
+        delete_project,
         project_stats,
         get_project,
         get_project_tasks,
@@ -454,5 +467,23 @@ mod test {
         let response_str = response.into_string().await.unwrap();
         let res: Vec<ProjectStats> = serde_json::from_str(&response_str).expect("List of stats");
         assert_eq!(res.len(), 4);
+    }
+
+    #[rocket::async_test]
+    async fn test_delete_project() {
+        let db = test_helpers::db_conn().await.unwrap();
+
+        let p = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .get(uri!(super::delete_project(p.id.to_string())))
+            .dispatch()
+            .await;
+
+        // FIXME: add ability to access db after API call to verify side effects
+        assert_eq!(response.status(), Status::Ok);
     }
 }

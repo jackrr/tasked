@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { formatRelative } from "date-fns";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 
-import { fetchProject, fetchProjectTasks } from "@/app/api";
+import {
+  fetchProject,
+  fetchProjectTasks,
+  createTaskInProject,
+} from "@/app/api";
 import { ProjectTitle, ProjectDescription } from "@/app/components/field";
 import { usePageTitle } from "@/app/hooks";
 import Button from "@/app/components/button";
-import AddTaskModal from "./add-task-modal";
 import TaskDetailModal from "./task-detail-modal";
+import Task from "./task";
 
 export default function Project() {
   const { id } = useParams<{ id: string }>();
@@ -49,25 +51,52 @@ export default function Project() {
       }),
   });
 
-  const [addingTask, setAddingTask] = useState(false);
+  const queryClient = useQueryClient();
+  const addTask = useMutation({
+    mutationFn: createTaskInProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project_tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const projectTaskIds = useMemo(
+    () => new Set(tasks?.map((t) => t.id)),
+    [tasks],
+  );
 
   usePageTitle(project?.title);
 
   return (
     <>
-      <Link href={"/"}>{"<-"}</Link>
-      <ProjectTitle value={project?.title} projectId={id} />
-      <ProjectDescription value={project?.description} projectId={id} />
-      <p>{project?.description}</p>
-      <Button onClick={() => setAddingTask(true)}>+ Add task</Button>
-      <AddTaskModal
-        open={addingTask}
-        toggleOpen={setAddingTask}
-        projectId={id}
-        projectTitle={project?.title}
-        projectTaskIds={new Set(tasks?.map((t) => t.id))}
-      />
+      <div className="h-full w-full p-4 grid gap-4 grid-cols-1 md:grid-cols-2">
+        <div className="h-full grid gap-4 grid-rows-[28px_1fr]">
+          <ProjectTitle
+            big
+            onDelete={() => {}}
+            value={project?.title}
+            projectId={id}
+          />
+          <ProjectDescription value={project?.description} projectId={id} />
+        </div>
+        <div>
+          <Button onClick={() => addTask.mutate({ title: "", projectId: id })}>
+            + Add task
+          </Button>
+          <ul>
+            {tasks?.map((t) => (
+              <li key={t.id} role="button">
+                <Task
+                  task={t}
+                  openDetails={() => setSelectedTask(t.id)}
+                  projectTaskIds={projectTaskIds}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
       {selectedTask && (
         <TaskDetailModal
           open={!!selectedTask}
@@ -76,17 +105,6 @@ export default function Project() {
           taskId={selectedTask}
         />
       )}
-      <ul>
-        {tasks?.map((t) => (
-          <li key={t.id}>
-            <div role="button" onClick={() => setSelectedTask(t.id)}>
-              <p>{t.title}</p>
-              {t.dueDate && formatRelative(t.dueDate, new Date())}
-              <div>{t.status}</div>
-            </div>
-          </li>
-        ))}
-      </ul>
     </>
   );
 }

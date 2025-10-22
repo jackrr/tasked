@@ -24,9 +24,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen min-w-screen grid grid-rows-[80px_1fr]`}
       >
-        <div className="p-2">
+        <div className="p-2 h-full">
           <Link href="/">
             <Image src={HomeIcon} width={64} height={64} alt="Home" />
           </Link>
