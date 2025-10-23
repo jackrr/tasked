@@ -24,23 +24,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen min-w-screen grid grid-rows-[80px_1fr]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-w-screen`}
       >
-        <div className="p-2 h-full">
-          <Link href="/" className="flex content-center justify-start">
-            <Image
-              src={HomeIcon}
-              width={64}
-              height={64}
-              alt="Home"
-              className="block"
-            />
-            <h1 className="italic font-bold text-xl pt-5 ml-2">tasked</h1>
-          </Link>
+        <div className="max-w-6xl m-auto grid grid-rows-[80px_1fr] h-screen">
+          <div className="p-2 h-full">
+            <Link href="/" className="flex content-center justify-start">
+              <Image
+                src={HomeIcon}
+                width={64}
+                height={64}
+                alt="Home"
+                className="block"
+              />
+              <h1 className="italic font-bold text-xl pt-5 ml-2">tasked</h1>
+            </Link>
+          </div>
+          <IdleContextProvider>
+            <ReactQueryProvider>{children}</ReactQueryProvider>
+          </IdleContextProvider>
         </div>
-        <IdleContextProvider>
-          <ReactQueryProvider>{children}</ReactQueryProvider>
-        </IdleContextProvider>
       </body>
     </html>
   );

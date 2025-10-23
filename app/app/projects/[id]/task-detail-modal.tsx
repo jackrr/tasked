@@ -31,10 +31,6 @@ export default function TaskDetailModal({
 
   if (!task) return null;
 
-  // TODO: styling to match design
-  // TODO: datepicker, status stuff
-  // TODO: button to delete task w/ confirm prompt
-
   return (
     <Modal {...modalProps}>
       <Title big entityId={task.id} entityType={"tasks"} onDelete={() => {}} />

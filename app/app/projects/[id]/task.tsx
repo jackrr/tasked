@@ -7,6 +7,8 @@ import { Title } from "@/app/components/field";
 import {
   addTaskToProject,
   searchTasks,
+  deleteTask,
+  fetchTaskProjects,
   Task as TaskType,
   TASK_STATUS_SERVER_TO_USER,
   persistField,
@@ -16,6 +18,7 @@ import { useDebounce } from "@/app/hooks";
 import TodoImg from "@/public/todo.png";
 import InProgressImg from "@/public/in-progress.png";
 import CompleteImg from "@/public/done.png";
+import ConfirmationModal from "@/app/components/confirmation-modal";
 
 const statusToImage = {
   [TASK_STATUS_SERVER_TO_USER.todo]: TodoImg,
@@ -50,6 +53,11 @@ export default function Task({
     mutationFn: addTaskToProject,
   });
 
+  const { data: taskProjects } = useQuery({
+    queryKey: ["projects", "task", task.id],
+    queryFn: () => fetchTaskProjects(task.id),
+  });
+
   const transitionStatus = useMutation({
     mutationFn: () =>
       persistField({
@@ -62,6 +70,21 @@ export default function Task({
           ],
       }),
   });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: deleteTask,
+  });
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  function handleDeleteRequest() {
+    if (
+      (task.description && task.description.length > 0) ||
+      (taskProjects && taskProjects?.length > 1) // is in other project
+    ) {
+      setConfirmingDelete(task.id);
+    } else {
+      deleteTaskMutation.mutate(task.id);
+    }
+  }
 
   const matchingTasksInOtherProject = tasks
     ? tasks.filter((t) => !projectTaskIds.has(t.id))
@@ -81,7 +104,7 @@ export default function Task({
         entityType={"tasks"}
         focused={focused}
         value={task.title}
-        onDelete={() => {}}
+        onDelete={handleDeleteRequest}
         onChange={(value) => setSearchQuery(value)}
       />
       {matchingTasksInOtherProject.length > 0 && (
@@ -102,6 +125,15 @@ export default function Task({
 
       {task.dueDate && formatRelative(task.dueDate, new Date())}
       <button onClick={openDetails}>...</button>
+      <ConfirmationModal
+        open={!!confirmingDelete}
+        toggleOpen={() => setConfirmingDelete(null)}
+        confirm={() => {
+          if (confirmingDelete) deleteTaskMutation.mutate(confirmingDelete);
+          setConfirmingDelete(null);
+        }}
+        header="Delete this task?"
+      />
     </div>
   );
 }

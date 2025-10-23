@@ -50,7 +50,7 @@ export default function Home() {
       <ul className="w-full">
         {projects &&
           projects.map((p, idx) => (
-            <li key={p.id} className="py-2 grid gap-x-2 grid-cols-[1fr_90px]">
+            <li key={p.id} className="py-2 grid gap-x-2 grid-cols-[1fr_180px]">
               <Title
                 value={p.title}
                 entityId={p.id}
