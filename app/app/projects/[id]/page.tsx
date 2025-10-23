@@ -19,7 +19,7 @@ export default function Project() {
   const { id } = useParams<{ id: string }>();
 
   const { data: project } = useQuery({
-    queryKey: ["project", id],
+    queryKey: ["projects", id],
     queryFn: () => fetchProject(id),
   });
 

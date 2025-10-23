@@ -121,7 +121,6 @@ export function Description({
   const input = useRef<HTMLTextAreaElement>(null);
 
   const { visible, idle } = useIdleContext();
-  // FIXME: syncing!
   useEffect(() => {
     if (
       input.current &&
@@ -131,11 +130,10 @@ export function Description({
     }
   }, [value]);
 
-  // TODO: prevent resize
   return (
     <textarea
       ref={input}
-      className="w-full outline-none border-b-2"
+      className="w-full outline-none border-b-2 resize-none"
       placeholder="Add a description here..."
       defaultValue={value || ""}
       onChange={(e) => onChange(e.target.value)}
