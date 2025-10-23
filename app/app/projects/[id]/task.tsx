@@ -10,23 +10,12 @@ import {
   deleteTask,
   fetchTaskProjects,
   Task as TaskType,
-  TASK_STATUS_SERVER_TO_USER,
   persistField,
   STATUS_ORDER,
 } from "@/app/api";
 import { useDebounce } from "@/app/hooks";
-import TodoImg from "@/public/todo.png";
-import InProgressImg from "@/public/in-progress.png";
-import CompleteImg from "@/public/done.png";
 import ConfirmationModal from "@/app/components/confirmation-modal";
-
-const statusToImage = {
-  [TASK_STATUS_SERVER_TO_USER.todo]: TodoImg,
-  [TASK_STATUS_SERVER_TO_USER.in_progress]: InProgressImg,
-  [TASK_STATUS_SERVER_TO_USER.complete]: CompleteImg,
-};
-
-Object.freeze(statusToImage);
+import Status from "@/app/components/status";
 
 export default function Task({
   task,
@@ -92,11 +81,9 @@ export default function Task({
 
   return (
     <div className="grid grid-cols-[24px_1fr_24px_24px] px-2 py-1 gap-x-4 border-b border-(--color-background) hover:border-(--color-foreground)">
-      <Image
-        src={statusToImage[task.status]}
-        width={24}
-        height={24}
-        alt={task.status}
+      <div
+        role="button"
+        className="w-24px h-24px"
         onClick={() => {
           if (task.status === STATUS_ORDER[STATUS_ORDER.length - 1]) {
             // on terminal status, open detail modal instead of transitioning
@@ -105,7 +92,9 @@ export default function Task({
             transitionStatus.mutate();
           }
         }}
-      />
+      >
+        <Status status={task.status} />
+      </div>
       <Title
         entityId={task.id}
         entityType={"tasks"}
