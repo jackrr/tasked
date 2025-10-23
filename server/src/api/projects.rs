@@ -98,6 +98,7 @@ async fn get_project(id: &str, db: &State<DatabaseConnection>) -> Result<Json<Pr
     }
 }
 
+// FIXME: support newline characters in descriptions !?
 // Edit field<>value pair(s) on project
 #[patch("/projects/<id>", format = "json", data = "<project>")]
 async fn edit_project(
@@ -127,6 +128,7 @@ async fn get_project_tasks(
     let id = parse_uuid(id)?;
     let tasks = Task::find()
         .has_related(Project, project::Column::Id.eq(id))
+        .order_by_asc(task::Column::CreatedAt)
         .all(db.inner())
         .await?;
 
@@ -260,6 +262,31 @@ mod test {
         let response_str = response.into_string().await.unwrap();
         let project: ProjectModel = serde_json::from_str(&response_str).expect("The Project");
         assert_eq!(project.title, "New Name!!");
+        assert_eq!(project.description, Some("A description!".to_string()));
+    }
+
+    #[rocket::async_test]
+    async fn test_edit_project_single_field() {
+        let db = test_helpers::db_conn().await.unwrap();
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .patch(uri!(super::edit_project(project.id.to_string())))
+            .header(ContentType::JSON)
+            .body(
+                r#"{
+                  "description": "A description!"
+                }"#,
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let project: ProjectModel = serde_json::from_str(&response_str).expect("The Project");
+        assert_eq!(project.title, "A project");
         assert_eq!(project.description, Some("A description!".to_string()));
     }
 

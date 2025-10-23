@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatRelative } from "date-fns";
 
 import Modal from "@/app/components/modal";
+import { Title, Description } from "@/app/components/field";
 import { fetchTask, fetchTaskProjects, removeTaskFromProject } from "@/app/api";
 
 export default function TaskDetailModal({
@@ -29,6 +30,7 @@ export default function TaskDetailModal({
   const removeProject = useMutation({
     mutationFn: removeTaskFromProject,
     onSuccess: () => {
+      // FIXME: replace these with webhook system
       queryClient.invalidateQueries({ queryKey: ["project_tasks", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
@@ -36,13 +38,15 @@ export default function TaskDetailModal({
 
   if (!task) return null;
 
-  // TODO: inline editing of title and description
+  // TODO: styling to match design
+  // TODO: datepicker, status stuff
   // TODO: button to delete task w/ confirm prompt
 
   return (
     <Modal {...modalProps}>
-      <h1>{task.title}</h1>
-      <p>{task.description}</p>
+      <Title big entityId={task.id} entityType={"tasks"} onDelete={() => {}} />
+
+      <Description entityId={task.id} entityType={"tasks"} />
       <p>
         {task.dueDate
           ? formatRelative(task.dueDate, new Date())

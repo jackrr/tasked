@@ -12,7 +12,7 @@ import {
 } from "@/app/api";
 import Button from "@/app/components/button";
 import ConfirmationModal from "@/app/components/confirmation-modal";
-import { ProjectTitle } from "@/app/components/field";
+import { Title } from "@/app/components/field";
 import { usePageTitle } from "./hooks";
 
 export default function Home() {
@@ -59,9 +59,10 @@ export default function Home() {
         {projects &&
           projects.map((p, idx) => (
             <li key={p.id} className="py-2 grid gap-x-2 grid-cols-[1fr_90px]">
-              <ProjectTitle
+              <Title
                 value={p.title}
-                projectId={p.id}
+                entityId={p.id}
+                entityType={"projects"}
                 focused={p.title === "" && idx === projects.length - 1}
                 onDelete={() => handleDeleteRequest(p)}
               />
@@ -77,7 +78,7 @@ export default function Home() {
                     </span>
                   </div>
 
-                  <em>more...</em>
+                  <em>edit...</em>
                 </div>
               </Link>
             </li>

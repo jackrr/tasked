@@ -9,7 +9,7 @@ import {
   fetchProjectTasks,
   createTaskInProject,
 } from "@/app/api";
-import { ProjectTitle, ProjectDescription } from "@/app/components/field";
+import { Title, Description } from "@/app/components/field";
 import { usePageTitle } from "@/app/hooks";
 import Button from "@/app/components/button";
 import TaskDetailModal from "./task-detail-modal";
@@ -47,7 +47,7 @@ export default function Project() {
           bigger = a.status > b.status;
         }
 
-        return bigger ? 1 : -1;
+        return bigger ? -1 : 1;
       }),
   });
 
@@ -72,23 +72,30 @@ export default function Project() {
     <>
       <div className="h-full w-full p-4 grid gap-4 grid-cols-1 md:grid-cols-2">
         <div className="h-full grid gap-4 grid-rows-[28px_1fr]">
-          <ProjectTitle
+          <Title
             big
             onDelete={() => {}}
             value={project?.title}
-            projectId={id}
+            entityId={id}
+            entityType="projects"
           />
-          <ProjectDescription value={project?.description} projectId={id} />
+          <Description
+            value={project?.description}
+            entityId={id}
+            entityType="projects"
+          />
         </div>
         <div>
           <Button onClick={() => addTask.mutate({ title: "", projectId: id })}>
             + Add task
           </Button>
           <ul>
-            {tasks?.map((t) => (
-              <li key={t.id} role="button">
+            {tasks?.map((t, idx) => (
+              <li key={t.id} role="button" className="py-2">
                 <Task
+                  focused={t.title === "" && idx === 0}
                   task={t}
+                  projectId={id}
                   openDetails={() => setSelectedTask(t.id)}
                   projectTaskIds={projectTaskIds}
                 />

@@ -25,14 +25,28 @@ type TaskResponse = {
   created_at: string;
 };
 
-const TaskStatus = {
+export const TASK_STATUS_SERVER_TO_USER = {
   todo: "Todo",
   in_progress: "In Progress",
   complete: "Complete",
 } as const;
-Object.freeze(TaskStatus);
-type TaskStatusServer = keyof typeof TaskStatus;
-type TaskStatusUser = (typeof TaskStatus)[TaskStatusServer];
+Object.freeze(TASK_STATUS_SERVER_TO_USER);
+type TaskStatusServer = keyof typeof TASK_STATUS_SERVER_TO_USER;
+type TaskStatusUser = (typeof TASK_STATUS_SERVER_TO_USER)[TaskStatusServer];
+
+export const STATUS_ORDER = [
+  TASK_STATUS_SERVER_TO_USER.todo,
+  TASK_STATUS_SERVER_TO_USER.in_progress,
+  TASK_STATUS_SERVER_TO_USER.complete,
+];
+
+const TASK_STATUS_USER_TO_SERVER = Object.fromEntries(
+  Object.entries(TASK_STATUS_SERVER_TO_USER).map(([key, value]) => [
+    value,
+    key,
+  ]),
+);
+Object.freeze(TASK_STATUS_USER_TO_SERVER);
 
 export type Project = {
   id: string;
@@ -71,7 +85,7 @@ function deserializeTask(t: TaskResponse): Task {
     id: t.id,
     title: t.title,
     description: t.description,
-    status: TaskStatus[t.status as TaskStatusServer],
+    status: TASK_STATUS_SERVER_TO_USER[t.status as TaskStatusServer],
     dueDate: t.due_date ? parseISO(t.due_date) : undefined,
     createdAt: parseISO(t.created_at),
   };
@@ -161,22 +175,34 @@ export async function addTaskToProject({
   });
 }
 
-export async function persistProjectField({
-  projectId,
+export async function persistField<T>({
+  entityId,
+  entityType,
   field,
   value,
 }: {
-  projectId: string;
+  entityId: string;
+  entityType: "tasks" | "projects";
   field: string;
-  value: any;
+  value: T;
 }) {
-  console.log("PERSISTING PROJECT FIELD", { projectId, field, value });
-  await fetch(`${BASE_URL}/projects/${projectId}`, {
+  const serverValue =
+    field === "status"
+      ? TASK_STATUS_USER_TO_SERVER[value as TaskStatusUser]
+      : value;
+  console.log("PERSISTING FIELD", {
+    entityId,
+    entityType,
+    field,
+    value,
+    serverValue,
+  });
+  await fetch(`${BASE_URL}/${entityType}/${entityId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ [field]: value }),
+    body: JSON.stringify({ [field]: serverValue }),
   });
 }
 

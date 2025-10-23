@@ -1,58 +1,64 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { persistProjectField } from "@/app/api";
+import { persistField } from "@/app/api";
 import { useDebounce } from "../hooks";
 
-const DELETE_KEYS = new Set(["Backspace", "Delete"]);
+export const DELETE_KEYS = new Set(["Backspace", "Delete"]);
 
-function useProjectFieldPersistence<T>({
-  projectId,
+export function useFieldPersistence<T>({
+  entityId,
+  entityType,
   field,
   value,
-}: {
-  projectId: string;
-  field: string;
-  value: T;
-}) {
-  const queryClient = useQueryClient();
-
+}: Parameters<typeof persistField>[0]) {
   const saveChange = useMutation({
-    mutationFn: persistProjectField,
+    mutationFn: persistField<T>,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      console.error("FIXME: ensure websocket handles invalidation");
     },
   });
 
-  // FIXME: if value changes from server DO NOT trigger debounced API request
-  const [editedValue, setEditedValue] = useState<T>(value);
+  // TODO: verify this works to prevent value changes from server triggering reactive API requests
+  const [persistedValue, setPersistedValue] = useState(value);
+  const [editedValue, setEditedValue] = useState<T>(value as T);
 
-  // Save edits after 200ms without editing
   const debouncedValue = useDebounce(editedValue, 200);
   useEffect(() => {
-    if (value !== debouncedValue) {
-      saveChange.mutate({ projectId, field, value: debouncedValue });
+    if (persistedValue !== debouncedValue) {
+      saveChange.mutate({
+        entityId,
+        entityType,
+        field,
+        value: debouncedValue,
+      });
+      setPersistedValue(debouncedValue);
     }
-  }, [value, debouncedValue]);
+  }, [value, debouncedValue, persistedValue]);
 
   return { onChange: setEditedValue };
 }
 
-export function ProjectTitle({
-  big,
+export function Title({
+  entityId,
+  entityType,
   value,
-  projectId,
+  big,
   focused,
   onDelete,
+  onChange,
 }: {
-  big?: boolean;
+  entityId: string;
+  entityType: "tasks" | "projects";
   value?: string;
-  projectId: string;
+  big?: boolean;
   focused?: boolean;
   onDelete: () => void;
+  onChange?: (value: string) => void;
 }) {
-  const { onChange } = useProjectFieldPersistence({
-    projectId,
+  const { onChange: onPersistableChange } = useFieldPersistence({
+    entityId,
+    entityType,
     field: "title",
     value,
   });
@@ -69,23 +75,30 @@ export function ProjectTitle({
   return (
     <input
       className={`w-full outline-none ${big ? "text-xl" : "text-md"}`}
+      placeholder="Add a title here..."
       ref={input}
       defaultValue={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => {
+        onPersistableChange(e.target.value);
+        onChange && onChange(e.target.value);
+      }}
       onKeyDown={(e) => handleKeyDown(e.key)}
     />
   );
 }
 
-export function ProjectDescription({
+export function Description({
+  entityId,
+  entityType,
   value,
-  projectId,
 }: {
+  entityId: string;
+  entityType: "tasks" | "projects";
   value?: string | null;
-  projectId: string;
 }) {
-  const { onChange } = useProjectFieldPersistence({
-    projectId,
+  const { onChange } = useFieldPersistence({
+    entityId,
+    entityType,
     field: "description",
     value,
   });
@@ -94,7 +107,7 @@ export function ProjectDescription({
   return (
     <textarea
       className="w-full outline-none border-b-2"
-      placeholder="Description for your project..."
+      placeholder="Add a description here..."
       defaultValue={value || ""}
       onChange={(e) => onChange(e.target.value)}
     ></textarea>
