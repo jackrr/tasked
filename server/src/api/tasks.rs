@@ -3,6 +3,7 @@ use rocket::{Route, State};
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 
 use super::helpers::parse_uuid;
+use super::subscription::{EntityType, FeedWriter, UpdateEvent, UpdateKind};
 use crate::models::project::{Project, ProjectModel};
 use crate::models::task::{self, EditTaskPayload, Task, TaskModel};
 use crate::result::{Result, error_response};
@@ -36,9 +37,19 @@ async fn get_task_projects(
 
 // Delete task with the given ID
 #[delete("/tasks/<id>")]
-async fn delete_task(id: &str, db: &State<DatabaseConnection>) -> Result<()> {
+async fn delete_task(
+    id: &str,
+    db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
+) -> Result<()> {
     let id = parse_uuid(id)?;
     Task::delete_by_id(id).exec(db.inner()).await?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Destroy,
+        EntityType::Task,
+        id.clone(),
+    )?;
     Ok(())
 }
 
@@ -48,9 +59,16 @@ async fn edit_task(
     id: &str,
     task: Json<EditTaskPayload<'_>>,
     db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
 ) -> Result<Json<TaskModel>> {
     let id = parse_uuid(id)?;
     let task = task::edit_task(db.inner(), &id, task).await?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Task,
+        id.clone(),
+    )?;
     Ok(Json(task))
 }
 
@@ -60,10 +78,17 @@ async fn clear_task_fields(
     id: &str,
     fields: Vec<&str>,
     db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
 ) -> Result<Json<TaskModel>> {
     let id = parse_uuid(id)?;
     let fields = task::ClearableField::from_field_strs(fields)?;
     let task = task::clear_fields(db.inner(), &id, fields).await?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Task,
+        id.clone(),
+    )?;
     Ok(Json(task))
 }
 

@@ -39,18 +39,15 @@ export default function Task({
   focused?: boolean;
 }) {
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const debouncedQuery = useDebounce(searchQuery, 200);
+  const { value: debouncedQuery } = useDebounce(searchQuery, 200);
   const { data: tasks } = useQuery({
-    queryKey: ["task_search", debouncedQuery],
+    queryKey: ["tasks", debouncedQuery],
     queryFn: () => searchTasks(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
   });
 
   const selectTask = useMutation({
     mutationFn: addTaskToProject,
-    onSuccess: () => {
-      // FIXME: Websocket should cover cache invalidation
-    },
   });
 
   const transitionStatus = useMutation({
@@ -70,11 +67,8 @@ export default function Task({
     ? tasks.filter((t) => !projectTaskIds.has(t.id))
     : [];
 
-  // TODO: color code status
-  // TODO: click due date pops open picker
-  // TODO: delete in task title deletes task (confirm if in other projects or has description) (also invalidate cache)
   return (
-    <div className="grid grid-cols-[24px_1fr_24px_24px] gap-x-4">
+    <div className="grid grid-cols-[24px_1fr_24px_24px] px-2 py-1 gap-x-4 border-b border-(--color-background) hover:border-(--color-foreground)">
       <Image
         src={statusToImage[task.status]}
         width={24}

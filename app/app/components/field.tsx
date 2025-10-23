@@ -14,16 +14,15 @@ export function useFieldPersistence<T>({
 }: Parameters<typeof persistField>[0]) {
   const saveChange = useMutation({
     mutationFn: persistField<T>,
-    onSuccess: () => {
-      console.error("FIXME: ensure websocket handles invalidation");
-    },
   });
 
-  // TODO: verify this works to prevent value changes from server triggering reactive API requests
   const [persistedValue, setPersistedValue] = useState(value);
   const [editedValue, setEditedValue] = useState<T>(value as T);
 
-  const debouncedValue = useDebounce(editedValue, 200);
+  const { value: debouncedValue, reset: resetDebounce } = useDebounce(
+    editedValue,
+    200,
+  );
   useEffect(() => {
     if (persistedValue !== debouncedValue) {
       saveChange.mutate({
@@ -34,7 +33,13 @@ export function useFieldPersistence<T>({
       });
       setPersistedValue(debouncedValue);
     }
-  }, [value, debouncedValue, persistedValue]);
+  }, [debouncedValue, persistedValue]);
+
+  // when value changes (change from outside this component), reset state around updated value
+  useEffect(() => {
+    setPersistedValue(value);
+    resetDebounce(value as T);
+  }, [value]);
 
   return { onChange: setEditedValue };
 }
@@ -72,6 +77,12 @@ export function Title({
     if (input.current?.value?.length === 0 && DELETE_KEYS.has(key)) onDelete();
   }
 
+  useEffect(() => {
+    if (input.current && document.activeElement !== input.current) {
+      input.current.value = value || "";
+    }
+  }, [value]);
+
   return (
     <input
       className={`w-full outline-none ${big ? "text-xl" : "text-md"}`}
@@ -102,10 +113,19 @@ export function Description({
     field: "description",
     value,
   });
+  const input = useRef<HTMLTextAreaElement>(null);
+
+  // FIXME: syncing!
+  useEffect(() => {
+    if (input.current && document.activeElement !== input.current) {
+      input.current.value = value || "";
+    }
+  }, [value]);
 
   // TODO: prevent resize
   return (
     <textarea
+      ref={input}
       className="w-full outline-none border-b-2"
       placeholder="Add a description here..."
       defaultValue={value || ""}

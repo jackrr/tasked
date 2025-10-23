@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 import {
   fetchProjects,
@@ -23,21 +23,13 @@ export default function Home() {
     queryFn: fetchProjects,
   });
 
-  const queryClient = useQueryClient();
   const submitProject = useMutation({
     mutationFn: createProject,
-    // TODO: centralize cache invalidation keys
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
   });
 
   // TODO: extract for use in project detail page
   const deleteProjectMutation = useMutation({
     mutationFn: deleteProject,
-    // TODO: centralize cache invalidation keys
-    onSuccess: (_, projectId) => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
-    },
   });
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   function handleDeleteRequest(project: ProjectWithStats) {

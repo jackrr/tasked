@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 
 import {
@@ -24,7 +24,7 @@ export default function Project() {
   });
 
   const { data: tasks } = useQuery({
-    queryKey: ["project_tasks", id],
+    queryKey: ["tasks", id],
     queryFn: () => fetchProjectTasks(id),
     select: (tasks) =>
       tasks.sort((a, b) => {
@@ -51,13 +51,8 @@ export default function Project() {
       }),
   });
 
-  const queryClient = useQueryClient();
   const addTask = useMutation({
     mutationFn: createTaskInProject,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project_tasks", id] });
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-    },
   });
 
   const [selectedTask, setSelectedTask] = useState<string | null>(null);

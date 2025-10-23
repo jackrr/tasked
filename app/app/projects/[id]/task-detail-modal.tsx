@@ -21,19 +21,12 @@ export default function TaskDetailModal({
   });
 
   const { data: projects } = useQuery({
-    queryKey: ["task_projects", taskId],
+    queryKey: ["projects", "task", taskId],
     queryFn: () => fetchTaskProjects(taskId),
   });
 
-  const queryClient = useQueryClient();
-
   const removeProject = useMutation({
     mutationFn: removeTaskFromProject,
-    onSuccess: () => {
-      // FIXME: replace these with webhook system
-      queryClient.invalidateQueries({ queryKey: ["project_tasks", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-    },
   });
 
   if (!task) return null;

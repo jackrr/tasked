@@ -9,6 +9,7 @@ use crate::models::task::{self, Task, TaskModel};
 use crate::result::{Result, error_response};
 
 use super::helpers::parse_uuid;
+use super::subscription::{EntityType, FeedWriter, UpdateEvent, UpdateKind};
 
 // Get task counts for projects with ids specified in query
 #[get("/projects")]
@@ -80,9 +81,15 @@ struct CreateProjectPayload<'r> {
 async fn create_project(
     project: Json<CreateProjectPayload<'_>>,
     db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
 ) -> Result<Json<ProjectModel>> {
     let project = project::create_project(db.inner(), project.title.to_owned()).await?;
-
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Create,
+        EntityType::Project,
+        project.id.clone(),
+    )?;
     Ok(Json(project))
 }
 
@@ -105,17 +112,34 @@ async fn edit_project(
     id: &str,
     project: Json<EditProjectPayload<'_>>,
     db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
 ) -> Result<Json<ProjectModel>> {
     let id = parse_uuid(id)?;
     let project = project::edit_project(db.inner(), &id, project).await?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Project,
+        id.clone(),
+    )?;
     Ok(Json(project))
 }
 
 // Delete project with the given ID
 #[delete("/projects/<id>")]
-async fn delete_project(id: &str, db: &State<DatabaseConnection>) -> Result<()> {
+async fn delete_project(
+    id: &str,
+    db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
+) -> Result<()> {
     let id = parse_uuid(id)?;
     Project::delete_by_id(id).exec(db.inner()).await?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Destroy,
+        EntityType::Project,
+        id.clone(),
+    )?;
     Ok(())
 }
 
@@ -146,12 +170,24 @@ async fn create_task_in_project(
     id: &str,
     task: Json<CreateTaskPayload<'_>>,
     db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
 ) -> Result<Json<TaskModel>> {
     let id = parse_uuid(id)?;
     let task =
         task::create_task_in_project(db.inner(), task.title.to_owned(), task::Status::Todo, &id)
             .await?;
-
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Create,
+        EntityType::Task,
+        task.id.clone(),
+    )?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Project,
+        id.clone(),
+    )?;
     Ok(Json(task))
 }
 
@@ -162,10 +198,25 @@ async fn add_task_to_project(
     project_id: &str,
     task_id: &str,
     db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
 ) -> Result<()> {
     let project_id = parse_uuid(project_id)?;
     let task_id = parse_uuid(task_id)?;
     task::add_to_project(db.inner(), &task_id, &project_id).await?;
+
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Project,
+        project_id.clone(),
+    )?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Task,
+        task_id.clone(),
+    )?;
+
     Ok(())
 }
 
@@ -176,10 +227,23 @@ async fn remove_task_from_project(
     project_id: &str,
     task_id: &str,
     db: &State<DatabaseConnection>,
+    feed: &State<FeedWriter>,
 ) -> Result<()> {
     let project_id = parse_uuid(project_id)?;
     let task_id = parse_uuid(task_id)?;
     task::remove_from_project(db.inner(), &task_id, &project_id).await?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Project,
+        project_id.clone(),
+    )?;
+    UpdateEvent::broadcast(
+        feed.inner(),
+        UpdateKind::Update,
+        EntityType::Task,
+        task_id.clone(),
+    )?;
     Ok(())
 }
 

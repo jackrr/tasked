@@ -167,7 +167,6 @@ pub async fn add_to_project(
     };
 
     let tp = tp.insert(db).await?;
-
     Ok(tp)
 }
 

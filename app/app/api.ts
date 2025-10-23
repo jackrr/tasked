@@ -1,5 +1,7 @@
-const BASE_URL = "http://localhost:8000";
 import { parseISO } from "date-fns";
+
+export const BASE_DOMAIN = "localhost:8000";
+export const BASE_URL = `http://${BASE_DOMAIN}`;
 
 type ProjectResponse = {
   id: string;

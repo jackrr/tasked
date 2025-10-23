@@ -8,17 +8,27 @@ export function usePageTitle(title?: string | null) {
   }, [title]);
 }
 
-export function useDebounce<T>(value: T, delay: number): T {
+export function useDebounce<T>(
+  value: T,
+  delay: number,
+): { value: T; reset: (newValue: T) => void } {
   const lastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedVal, setDebouncedVal] = useState(value);
 
   useEffect(() => {
-    if (lastTimeout.current) clearTimeout(lastTimeout.current);
+    lastTimeout.current && clearTimeout(lastTimeout.current);
 
     lastTimeout.current = setTimeout(() => {
       setDebouncedVal(value);
     }, delay);
   }, [value, delay]);
 
-  return debouncedVal;
+  return {
+    value: debouncedVal,
+    reset: (newValue: T) => {
+      lastTimeout.current && clearTimeout(lastTimeout.current);
+      lastTimeout.current = null;
+      setDebouncedVal(newValue);
+    },
+  };
 }

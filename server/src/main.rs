@@ -1,15 +1,18 @@
 #[macro_use]
 extern crate rocket;
 
+use api::subscription::FeedWriter;
 use dotenv::dotenv;
 use migration::{Migrator, MigratorTrait};
 use rocket::{Build, Rocket};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use sea_orm::{Database, DatabaseConnection};
 use std::env;
+use tokio::sync::broadcast;
 
 mod api;
 use api::projects;
+use api::subscription;
 use api::tasks;
 
 mod models;
@@ -23,12 +26,17 @@ fn index() -> &'static str {
     "Hello, world!"
 }
 
-async fn initialize_rocket(db_conn: DatabaseConnection) -> anyhow::Result<Rocket<Build>> {
+async fn initialize_rocket(
+    db_conn: DatabaseConnection,
+    update_feed: FeedWriter,
+) -> anyhow::Result<Rocket<Build>> {
     let rocket = rocket::build()
         .manage(db_conn)
+        .manage(update_feed)
         .mount("/", routes![index])
         .mount("/", projects::routes())
-        .mount("/", tasks::routes());
+        .mount("/", tasks::routes())
+        .mount("/", subscription::routes());
 
     Ok(rocket)
 }
@@ -42,7 +50,9 @@ async fn main() -> anyhow::Result<()> {
     let db_uri = env::var("DATABASE_URL").unwrap();
     let conn = Database::connect(db_uri).await?;
     Migrator::up(&conn, None).await?;
-    let rocket = initialize_rocket(conn).await?;
+
+    let update_feed = broadcast::channel(1).0;
+    let rocket = initialize_rocket(conn, update_feed).await?;
 
     let allowed_origins = env::var("ALLOWED_ORIGINS").unwrap();
     let allowed_origins: Vec<&str> = allowed_origins.split(",").collect();
