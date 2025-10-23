@@ -97,7 +97,14 @@ export default function Task({
         width={24}
         height={24}
         alt={task.status}
-        onClick={() => transitionStatus.mutate()}
+        onClick={() => {
+          if (task.status === STATUS_ORDER[STATUS_ORDER.length - 1]) {
+            // on terminal status, open detail modal instead of transitioning
+            openDetails();
+          } else {
+            transitionStatus.mutate();
+          }
+        }}
       />
       <Title
         entityId={task.id}
