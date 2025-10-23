@@ -105,7 +105,7 @@ async fn get_project(id: &str, db: &State<DatabaseConnection>) -> Result<Json<Pr
     }
 }
 
-// FIXME: support newline characters in descriptions !?
+// FIXME: support newline, quote characters in descriptions !?
 // Edit field<>value pair(s) on project
 #[patch("/projects/<id>", format = "json", data = "<project>")]
 async fn edit_project(

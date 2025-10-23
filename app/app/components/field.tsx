@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import { persistField } from "@/app/api";
-import { useDebounce } from "../hooks";
+import { useDebounce } from "@/app/hooks";
+import { useIdleContext } from "@/app/components/idle-detector";
 
 export const DELETE_KEYS = new Set(["Backspace", "Delete"]);
 
@@ -77,8 +78,12 @@ export function Title({
     if (input.current?.value?.length === 0 && DELETE_KEYS.has(key)) onDelete();
   }
 
+  const { visible, idle } = useIdleContext();
   useEffect(() => {
-    if (input.current && document.activeElement !== input.current) {
+    if (
+      input.current &&
+      (!visible || idle || document.activeElement !== input.current)
+    ) {
       input.current.value = value || "";
     }
   }, [value]);
@@ -115,9 +120,13 @@ export function Description({
   });
   const input = useRef<HTMLTextAreaElement>(null);
 
+  const { visible, idle } = useIdleContext();
   // FIXME: syncing!
   useEffect(() => {
-    if (input.current && document.activeElement !== input.current) {
+    if (
+      input.current &&
+      (!visible || idle || document.activeElement !== input.current)
+    ) {
       input.current.value = value || "";
     }
   }, [value]);
