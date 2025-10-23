@@ -40,7 +40,7 @@ export function useCacheInvalidator(queryClient: QueryClient) {
       const message = toClient(JSON.parse(event.data) as ServerUpdateEvent);
       const { entityId, entityType } = message;
 
-      // Sadly, all changes affect project list page
+      // Sadly, all changes affect project list page.
       queryClient.invalidateQueries({ queryKey: ["projects"] });
 
       if (entityType === "tasks") {

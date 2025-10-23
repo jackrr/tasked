@@ -27,7 +27,6 @@ export default function Home() {
     mutationFn: createProject,
   });
 
-  // TODO: extract for use in project detail page
   const deleteProjectMutation = useMutation({
     mutationFn: deleteProject,
   });

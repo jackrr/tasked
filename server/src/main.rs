@@ -51,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
     let conn = Database::connect(db_uri).await?;
     Migrator::up(&conn, None).await?;
 
-    let update_feed = broadcast::channel(1).0;
+    let update_feed = broadcast::channel(8).0;
     let rocket = initialize_rocket(conn, update_feed).await?;
 
     let allowed_origins = env::var("ALLOWED_ORIGINS").unwrap();
