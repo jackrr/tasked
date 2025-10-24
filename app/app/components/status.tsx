@@ -7,7 +7,6 @@ const statusToImage = {
 };
 Object.freeze(statusToImage);
 
-// TODO: COLORS!
 export default function Status({
   status,
 }: {

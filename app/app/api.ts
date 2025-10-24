@@ -34,7 +34,8 @@ export const TASK_STATUS_SERVER_TO_USER = {
 } as const;
 Object.freeze(TASK_STATUS_SERVER_TO_USER);
 type TaskStatusServer = keyof typeof TASK_STATUS_SERVER_TO_USER;
-type TaskStatusUser = (typeof TASK_STATUS_SERVER_TO_USER)[TaskStatusServer];
+export type TaskStatusUser =
+  (typeof TASK_STATUS_SERVER_TO_USER)[TaskStatusServer];
 
 export const STATUS_ORDER = [
   TASK_STATUS_SERVER_TO_USER.todo,

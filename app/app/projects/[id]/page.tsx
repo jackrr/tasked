@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import {
   fetchProject,
@@ -17,6 +17,9 @@ import Task from "./task";
 
 export default function Project() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const selectedTaskId = searchParams.get("task_id");
+  const router = useRouter();
 
   const { data: project } = useQuery({
     queryKey: ["projects", id],
@@ -49,11 +52,18 @@ export default function Project() {
       }),
   });
 
+  // If task was deleted while we're looking at it, well, gotta stop
+  // looking at it
+  useEffect(() => {
+    if (!selectedTaskId || !tasks) return;
+    if (new Set(tasks.map((t) => t.id)).has(selectedTaskId)) return;
+    router.push(`/projects/${id}`);
+  }, [tasks, selectedTaskId]);
+
   const addTask = useMutation({
     mutationFn: createTaskInProject,
   });
 
-  const [selectedTask, setSelectedTask] = useState<string | null>(null);
   const projectTaskIds = useMemo(
     () => new Set(tasks?.map((t) => t.id)),
     [tasks],
@@ -92,7 +102,6 @@ export default function Project() {
                   focused={t.title === "" && idx === 0}
                   task={t}
                   projectId={id}
-                  openDetails={() => setSelectedTask(t.id)}
                   projectTaskIds={projectTaskIds}
                 />
               </li>
@@ -100,12 +109,11 @@ export default function Project() {
           </ul>
         </div>
       </div>
-      {selectedTask && (
+      {selectedTaskId && (
         <TaskDetailModal
-          open={!!selectedTask}
-          toggleOpen={() => setSelectedTask(null)}
+          open={!!selectedTaskId}
           projectId={id}
-          taskId={selectedTask}
+          taskId={selectedTaskId}
         />
       )}
     </>

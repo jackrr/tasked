@@ -25,6 +25,7 @@ export default function Modal({
       onClick={(e) => {
         if (e.target === dialog.current) toggleOpen(false);
       }}
+      className="backdrop:bg-foreground/40 backdrop:backdrop-blur-xs fixed top-[50%] left-[50%] translate-[-50%] rounded-md p-4"
     >
       {children}
     </dialog>

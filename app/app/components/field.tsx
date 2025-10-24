@@ -107,10 +107,12 @@ export function Description({
   entityId,
   entityType,
   value,
+  className,
 }: {
   entityId: string;
   entityType: "tasks" | "projects";
   value?: string | null;
+  className?: string;
 }) {
   const { onChange } = useFieldPersistence({
     entityId,
@@ -133,7 +135,7 @@ export function Description({
   return (
     <textarea
       ref={input}
-      className="w-full outline-none border-b-2 resize-none"
+      className={`w-full outline-none border-b-2 resize-none ${className}`}
       placeholder="Add a description here..."
       defaultValue={value || ""}
       onChange={(e) => onChange(e.target.value)}
