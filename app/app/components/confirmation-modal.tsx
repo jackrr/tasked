@@ -12,7 +12,7 @@ export default function ConfirmationModal({
   confirm: () => void;
 }) {
   return (
-    <Modal {...modalProps} toggleOpen={toggleOpen}>
+    <Modal {...modalProps} toggleOpen={toggleOpen} className="max-w-xs !h-fit">
       <h1 className="mb-4 pr-4 border-b-2 w-fit">{header}</h1>
       <p>This action cannot be undone.</p>
       <div className="mt-4 mx-4 flex justify-between">

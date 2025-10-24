@@ -4,10 +4,12 @@ export default function Modal({
   children,
   open,
   toggleOpen,
+  className,
 }: {
   open: boolean;
   toggleOpen: (open: boolean) => void;
   children: ReactNode;
+  className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
 
@@ -25,9 +27,9 @@ export default function Modal({
       onClick={(e) => {
         if (e.target === dialog.current) toggleOpen(false);
       }}
-      className="backdrop:bg-foreground/40 backdrop:backdrop-blur-xs fixed top-[50%] left-[50%] translate-[-50%] rounded-md p-4"
+      className={`${className} backdrop:bg-foreground/40 backdrop:backdrop-blur-xs fixed top-0 left-0 md:w-auto md:h-auto md:top-[50%] md:left-[50%] md:translate-[-50%] md:rounded-md`}
     >
-      {children}
+      <div className="p-4 h-full w-full overflow-auto">{children}</div>
     </dialog>
   );
 }

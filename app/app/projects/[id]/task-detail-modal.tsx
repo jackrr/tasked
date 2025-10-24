@@ -71,70 +71,81 @@ export default function TaskDetailModal({
   if (!task) return null;
 
   return (
-    <Modal {...modalProps} toggleOpen={close}>
-      <div className="grid grid-cols-3 mb-2">
-        {STATUS_ORDER.map((s) => {
-          const current = task.status === s;
-          return (
-            <div
-              key={s}
-              className={`flex justify-start items-center cursor-pointer ${current ? "" : "opacity-50"}`}
-              onClick={() => !current && setStatus.mutate(s)}
-            >
-              <Status status={s} />
-              <p className="pl-2 pt-1">{s}</p>
-            </div>
-          );
-        })}
+    <Modal {...modalProps} toggleOpen={close} className="max-w-xl">
+      <div className="flex flex-col h-full">
+        <div className="flex justify-end content-center -mt-4 -mr-2">
+          <button
+            className="cursor-pointer text-2xl text-gray-600 pl-4"
+            onClick={close}
+          >
+            x
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 mb-2">
+          {STATUS_ORDER.map((s) => {
+            const current = task.status === s;
+            return (
+              <div
+                key={s}
+                className={`flex justify-start items-center cursor-pointer ${current ? "" : "opacity-50"}`}
+                onClick={() => !current && setStatus.mutate(s)}
+              >
+                <Status status={s} />
+                <p className="pl-2 pt-1">{s}</p>
+              </div>
+            );
+          })}
+        </div>
+        <Title
+          big
+          entityId={task.id}
+          entityType={"tasks"}
+          value={task.title}
+          onDelete={() => {}}
+        />
+        <Description
+          entityId={task.id}
+          entityType={"tasks"}
+          value={task.description}
+          className="border-none mt-2 grow"
+        />
+        <DueDate showEmpty taskId={task.id} value={task.dueDate} />
+        <h3 className="mt-4 mb-1 pr-6 border-b w-fit">Projects</h3>
+        <div className="flex flex-wrap flex-row gap-3 mt-4">
+          {projects?.map((p) => {
+            const currentProject = p.id === projectId;
+            return (
+              <div key={p.id} className="max-w-3xs">
+                {!currentProject && (
+                  <Button
+                    onClick={() =>
+                      removeProject.mutate({ taskId, projectId: p.id })
+                    }
+                    className="inline border-r-0"
+                  >
+                    X
+                  </Button>
+                )}
+                <Link href={`/projects/${p.id}`}>
+                  <Button
+                    onClick={() => {}}
+                    className={`inline ${currentProject ? "opacity-60" : ""}`}
+                  >
+                    {p.title}
+                  </Button>
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+        <Button
+          onClick={() => setDeleteRequested(true)}
+          className="mt-6 w-full border-2 border-red-600 text-red-600 font-bold"
+        >
+          Delete this Task
+        </Button>
       </div>
-      <Title
-        big
-        entityId={task.id}
-        entityType={"tasks"}
-        value={task.title}
-        onDelete={() => {}}
-      />
-      <Description
-        entityId={task.id}
-        entityType={"tasks"}
-        value={task.description}
-        className="border-none mt-2"
-      />
-      <DueDate showEmpty taskId={task.id} value={task.dueDate} />
-      <h3 className="mt-4 mb-1 pr-6 border-b w-fit">Projects</h3>
-      <div className="flex flex-wrap flex-row gap-3 mt-4">
-        {projects?.map((p) => {
-          const currentProject = p.id === projectId;
-          return (
-            <div key={p.id} className="max-w-3xs">
-              {!currentProject && (
-                <Button
-                  onClick={() =>
-                    removeProject.mutate({ taskId, projectId: p.id })
-                  }
-                  className="inline border-r-0"
-                >
-                  X
-                </Button>
-              )}
-              <Link href={`/projects/${p.id}`}>
-                <Button
-                  onClick={() => {}}
-                  className={`inline ${currentProject ? "opacity-60" : ""}`}
-                >
-                  {p.title}
-                </Button>
-              </Link>
-            </div>
-          );
-        })}
-      </div>
-      <Button
-        onClick={() => setDeleteRequested(true)}
-        className="mt-6 w-full border-2 border-red-600 text-red-600 font-bold"
-      >
-        Delete this Task
-      </Button>
       <TaskDeleteHandler
         task={task}
         deleteRequested={deleteRequested}
