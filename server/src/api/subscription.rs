@@ -1,7 +1,8 @@
 use anyhow::Result;
 use rocket::futures::SinkExt;
 use rocket::futures::stream::FusedStream;
-use rocket::{Route, State};
+use rocket::tokio::select;
+use rocket::{Route, Shutdown, State};
 use serde::Serialize;
 use tokio::sync::broadcast::Sender;
 use uuid::Uuid;
@@ -50,23 +51,42 @@ impl UpdateEvent {
 }
 
 #[get("/subscribe")]
-fn subscribe(ws: WebSocket, update_feed: &State<FeedWriter>) -> ws::Channel<'static> {
+fn subscribe(
+    ws: WebSocket,
+    update_feed: &State<FeedWriter>,
+    mut shutdown: Shutdown,
+) -> ws::Channel<'static> {
     let mut feed = update_feed.subscribe();
 
     ws.channel(move |mut stream| {
         Box::pin(async move {
-            while let Ok(update) = feed.recv().await {
-                if stream.is_terminated() {
-                    return Ok(());
-                }
-                let message = match serde_json::to_string(&update) {
-                    Ok(message) => message,
-                    Err(e) => {
-                        eprintln!("Failed to process update event. Event: {update:?} Error: {e:?}");
-                        continue;
+            // Process messages
+            // On shutdown signal, terminate websocket stream and close request
+            loop {
+                select! {
+                    update = feed.recv() => {
+                        match update {
+                            Err(_) => continue,
+                            Ok(update) => {
+                                if stream.is_terminated() {
+                                    return Ok(());
+                                }
+                                let message = match serde_json::to_string(&update) {
+                                    Ok(message) => message,
+                                    Err(e) => {
+                                        eprintln!("Failed to process update event. Event: {update:?} Error: {e:?}");
+                                        continue;
+                                    }
+                                };
+                                stream.send(message.into()).await?;
+                            },
+                        }
+                    },
+                    _ = &mut shutdown => {
+                        stream.close(None).await?;
+                        break;
                     }
-                };
-                stream.send(message.into()).await?;
+                }
             }
 
             Ok(())
