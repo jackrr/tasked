@@ -11,10 +11,15 @@ Tasked - a simple project management web app.
   ```bash
   mkdir tmp
   ```
-5. Create a `.env` file, replacing "/path/to/your/clone/" with the absolute path to the cloned repo:
+5. Create a server `.env` file, replacing "/path/to/your/clone/" with the absolute path to the cloned repo:
   ```bash
   echo "DATABASE_URL=sqlite:///path/to/your/clone/tmp/db.sqlite?mode=rwc" > server/.env
   echo "ALLOWED_ORIGINS=http://localhost:3000" >> server/.env
+  ```
+5. And create a client `.env` file, replacing "/path/to/your/clone/" with the absolute path to the cloned repo:
+  ```bash
+  echo "NEXT_PUBLIC_WS_URI=ws://localhost:8000" > app/.env
+  echo "NEXT_PUBLIC_API_URI=https://localhost:8000" >> app/.env
   ```
 6. Run `bun install` from the `app` directory
 

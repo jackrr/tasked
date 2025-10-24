@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from "react";
-import { BASE_DOMAIN } from "@/app/api";
 import { QueryClient } from "@tanstack/react-query";
+
+const WS_BASE_URI = process.env.NEXT_PUBLIC_WS_URI;
 
 type SubscriptionPayload = {
   entityType: "tasks" | "projects";
@@ -33,7 +34,7 @@ function toClient(e: ServerUpdateEvent): ClientUpdateEvent {
 }
 
 export function useCacheInvalidator(queryClient: QueryClient) {
-  const [webSocket] = useState(new WebSocket(`ws://${BASE_DOMAIN}/subscribe`));
+  const [webSocket] = useState(new WebSocket(`${WS_BASE_URI}/subscribe`));
 
   useEffect(() => {
     webSocket.addEventListener("message", (event) => {

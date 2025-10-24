@@ -1,7 +1,6 @@
 import { parseISO } from "date-fns";
 
-export const BASE_DOMAIN = "localhost:8000";
-export const BASE_URL = `http://${BASE_DOMAIN}`;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URI;
 
 type ProjectResponse = {
   id: string;
