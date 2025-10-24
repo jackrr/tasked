@@ -41,7 +41,7 @@ export default function Project() {
             } else if (!a.dueDate) {
               bigger = false;
             } else {
-              bigger = a.dueDate > b.dueDate;
+              bigger = a.dueDate < b.dueDate;
             }
           }
         } else {

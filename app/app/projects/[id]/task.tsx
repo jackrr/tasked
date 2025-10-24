@@ -13,9 +13,9 @@ import {
   STATUS_ORDER,
 } from "@/app/api";
 import { useDebounce } from "@/app/hooks";
-import TaskDeleteHandler from "./delete-task";
-
+import ExpandIcon from "@/app/components/expand-icon";
 import Status from "@/app/components/status";
+import TaskDeleteHandler from "./delete-task";
 
 export default function Task({
   task,
@@ -62,11 +62,17 @@ export default function Task({
     ? tasks.filter((t) => !projectTaskIds.has(t.id))
     : [];
 
+  const cols = task.dueDate
+    ? "grid-cols-[24px_1fr_40px_24px]"
+    : "grid-cols-[24px_1fr_24px]";
+
   return (
-    <div className="relative grid grid-cols-[24px_1fr_24px_24px] px-2 py-1 gap-x-4 border-b border-(--color-background) hover:border-(--color-foreground)">
+    <div
+      className={`relative pr-4 grid ${cols} px-2 py-1 gap-x-2 border-b border-(--color-background) hover:border-(--color-foreground)`}
+    >
       <div
         role="button"
-        className="w-24px h-24px"
+        className="w-24px h-24px cursor-pointer"
         onClick={() => {
           if (task.status === STATUS_ORDER[STATUS_ORDER.length - 1]) {
             // on terminal status, open detail modal instead of transitioning
@@ -101,8 +107,17 @@ export default function Task({
           ))}
         </ul>
       )}
-      <DueDate short taskId={task.id} value={task.dueDate} />
-      <Link href={`/projects/${projectId}?task_id=${task.id}`}>...</Link>
+      {task.dueDate && (
+        <div className="mx-1">
+          <DueDate short taskId={task.id} value={task.dueDate} />
+        </div>
+      )}
+      <Link
+        href={`/projects/${projectId}?task_id=${task.id}`}
+        className="flex justify-center items-center"
+      >
+        <ExpandIcon width={16} height={16} />
+      </Link>
       <TaskDeleteHandler
         done={() => setDeletingTask(false)}
         task={task}

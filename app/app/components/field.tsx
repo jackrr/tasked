@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { formatDistanceToNow, format } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 
 import { persistField } from "@/app/api";
 import { useDebounce } from "@/app/hooks";
@@ -185,9 +185,15 @@ export function DueDate({
         {value ? (
           <>
             {!short && <p>Due on {format(value, "MMM do, yyyy")}</p>}
-            <p className="italic">
-              {!short && "Due in "}
-              {formatDistanceToNow(value)}
+            <p
+              className={
+                short
+                  ? "text-xs text-nowrap rotate-315 translate-y-[50%]"
+                  : "italic"
+              }
+            >
+              {short ? "in " : "Due in "}
+              {formatDistanceToNowStrict(value)}
             </p>
           </>
         ) : (

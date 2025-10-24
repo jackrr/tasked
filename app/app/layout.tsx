@@ -28,7 +28,7 @@ export default function RootLayout({
       >
         <div className="max-w-6xl m-auto grid grid-rows-[80px_1fr] h-screen">
           <div className="p-2 h-full">
-            <Link href="/" className="flex content-center justify-start">
+            <Link href="/" className="flex items-center justify-start">
               <Image
                 src={HomeIcon}
                 width={64}
@@ -36,7 +36,7 @@ export default function RootLayout({
                 alt="Home"
                 className="block"
               />
-              <h1 className="italic font-bold text-xl pt-5 ml-2">tasked</h1>
+              <h1 className="italic font-bold text-xl mt-2 ml-2">tasked</h1>
             </Link>
           </div>
           <IdleContextProvider>

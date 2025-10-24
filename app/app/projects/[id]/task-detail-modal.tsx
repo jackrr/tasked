@@ -78,7 +78,7 @@ export default function TaskDetailModal({
           return (
             <div
               key={s}
-              className={`flex justify-start align-center cursor-pointer ${current ? "" : "opacity-50"}`}
+              className={`flex justify-start items-center cursor-pointer ${current ? "" : "opacity-50"}`}
               onClick={() => !current && setStatus.mutate(s)}
             >
               <Status status={s} />
