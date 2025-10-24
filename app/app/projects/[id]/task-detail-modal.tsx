@@ -1,12 +1,11 @@
 "use client";
 
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { formatRelative } from "date-fns";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import Modal from "@/app/components/modal";
-import { Title, Description } from "@/app/components/field";
+import { Title, Description, DueDate } from "@/app/components/field";
 import {
   fetchTask,
   fetchTaskProjects,
@@ -101,11 +100,7 @@ export default function TaskDetailModal({
         value={task.description}
         className="border-none mt-2"
       />
-      <p>
-        {task.dueDate
-          ? formatRelative(task.dueDate, new Date())
-          : "No due date"}
-      </p>
+      <DueDate showEmpty taskId={task.id} value={task.dueDate} />
       <h3 className="mt-4 mb-1 pr-6 border-b w-fit">Projects</h3>
       <div className="flex flex-wrap flex-row gap-3 mt-4">
         {projects?.map((p) => {

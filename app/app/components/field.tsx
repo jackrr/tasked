@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { formatDistanceToNow, format } from "date-fns";
 
 import { persistField } from "@/app/api";
 import { useDebounce } from "@/app/hooks";
 import { useIdleContext } from "@/app/components/idle-detector";
+import Modal from "./modal";
 
 export const DELETE_KEYS = new Set(["Backspace", "Delete"]);
+export const ENTER_KEYS = new Set(["Enter", "Return"]);
 
 export function useFieldPersistence<T>({
   entityId,
@@ -51,6 +54,7 @@ export function Title({
   value,
   big,
   focused,
+  onEnterKey,
   onDelete,
   onChange,
 }: {
@@ -59,7 +63,8 @@ export function Title({
   value?: string;
   big?: boolean;
   focused?: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
+  onEnterKey?: () => void;
   onChange?: (value: string) => void;
 }) {
   const { onChange: onPersistableChange } = useFieldPersistence({
@@ -75,7 +80,9 @@ export function Title({
   }, [focused]);
 
   function handleKeyDown(key: string) {
-    if (input.current?.value?.length === 0 && DELETE_KEYS.has(key)) onDelete();
+    if (onDelete && input.current?.value?.length === 0 && DELETE_KEYS.has(key))
+      onDelete();
+    if (onEnterKey && ENTER_KEYS.has(key)) onEnterKey();
   }
 
   const { visible, idle } = useIdleContext();
@@ -140,5 +147,53 @@ export function Description({
       defaultValue={value || ""}
       onChange={(e) => onChange(e.target.value)}
     ></textarea>
+  );
+}
+
+export function DueDate({
+  taskId,
+  value,
+  showEmpty,
+  short,
+}: {
+  taskId: string;
+  value?: Date;
+  showEmpty?: boolean;
+  short?: boolean;
+}) {
+  const { onChange } = useFieldPersistence({
+    entityId: taskId,
+    entityType: "tasks",
+    field: "due_date",
+    value,
+  });
+
+  const [editing, setEditing] = useState(false);
+
+  if (!value && !showEmpty) return;
+
+  return (
+    <>
+      <Modal open={editing} toggleOpen={setEditing}>
+        <input type="date" onChange={(e) => onChange(e.target.value)} />
+      </Modal>
+      <div
+        className="cursor-pointer"
+        role="button"
+        onClick={() => setEditing(true)}
+      >
+        {value ? (
+          <>
+            {!short && <p>Due on {format(value, "MMM do, yyyy")}</p>}
+            <p className="italic">
+              {!short && "Due in "}
+              {formatDistanceToNow(value)}
+            </p>
+          </>
+        ) : (
+          <p className="italic">No due date</p>
+        )}
+      </div>
+    </>
   );
 }

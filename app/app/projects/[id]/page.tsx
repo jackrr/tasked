@@ -74,10 +74,9 @@ export default function Project() {
   return (
     <>
       <div className="h-full w-full p-4 grid gap-4 grid-cols-1 md:grid-cols-2 overflow-hidden">
-        <div className="h-full grid gap-4 grid-rows-[28px_1fr] overflow-y-scroll">
+        <div className="h-full grid gap-4 grid-rows-[28px_1fr] overflow-y-auto">
           <Title
             big
-            onDelete={() => {}}
             value={project?.title}
             entityId={id}
             entityType="projects"
@@ -88,17 +87,20 @@ export default function Project() {
             entityType="projects"
           />
         </div>
-        <div className="overflow-y-scroll relative">
+        <div className="overflow-x-hidden overflow-y-auto relative">
           <Button
             onClick={() => addTask.mutate({ title: "", projectId: id })}
             className="sticky top-0 bg-background z-100"
           >
             + Add task
           </Button>
-          <ul className="overflow-y-scroll">
+          <ul>
             {tasks?.map((t, idx) => (
               <li key={t.id} role="button" className="py-2">
                 <Task
+                  addTask={() => {
+                    addTask.mutate({ projectId: id, title: "" });
+                  }}
                   focused={t.title === "" && idx === 0}
                   task={t}
                   projectId={id}

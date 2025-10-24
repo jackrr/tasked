@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Title } from "@/app/components/field";
+import { Title, DueDate } from "@/app/components/field";
 import {
   addTaskToProject,
   searchTasks,
@@ -22,11 +22,13 @@ export default function Task({
   projectId,
   projectTaskIds,
   focused,
+  addTask,
 }: {
   task: TaskType;
   projectId: string;
   projectTaskIds: Set<string>;
   focused?: boolean;
+  addTask: () => void;
 }) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -83,6 +85,7 @@ export default function Task({
         value={task.title}
         onDelete={() => setDeletingTask(true)}
         onChange={(value) => setSearchQuery(value)}
+        onEnterKey={addTask}
       />
       {matchingTasksInOtherProject.length > 0 && (
         <ul className="absolute top-full left-0 p-2 z-100 bg-background max-w-sm">
@@ -98,8 +101,7 @@ export default function Task({
           ))}
         </ul>
       )}
-
-      {task.dueDate && formatRelative(task.dueDate, new Date())}
+      <DueDate short taskId={task.id} value={task.dueDate} />
       <Link href={`/projects/${projectId}?task_id=${task.id}`}>...</Link>
       <TaskDeleteHandler
         done={() => setDeletingTask(false)}

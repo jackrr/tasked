@@ -193,13 +193,6 @@ export async function persistField<T>({
     field === "status"
       ? TASK_STATUS_USER_TO_SERVER[value as TaskStatusUser]
       : value;
-  console.log("PERSISTING FIELD", {
-    entityId,
-    entityType,
-    field,
-    value,
-    serverValue,
-  });
   await fetch(`${BASE_URL}/${entityType}/${entityId}`, {
     method: "PATCH",
     headers: {
