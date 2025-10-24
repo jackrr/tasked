@@ -174,8 +174,13 @@ export function DueDate({
 
   return (
     <>
-      <Modal open={editing} toggleOpen={setEditing}>
-        <input type="date" onChange={(e) => onChange(e.target.value)} />
+      <Modal open={editing} toggleOpen={setEditing} size="small">
+        <input
+          className="m-auto block"
+          defaultValue={value ? format(value, "yyyy-MM-dd") : undefined}
+          type="date"
+          onChange={(e) => onChange(e.target.value)}
+        />
       </Modal>
       <div
         className="cursor-pointer"
