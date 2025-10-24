@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { format, formatDistanceToNowStrict } from "date-fns";
 
 import { persistField } from "@/app/api";
-import { useDebounce } from "@/app/hooks";
+import { useDebounce, useIsOverflowing } from "@/app/hooks";
 import { useIdleContext } from "@/app/components/idle-detector";
 import Modal from "./modal";
 
@@ -97,7 +97,7 @@ export function Title({
 
   return (
     <input
-      className={`w-full outline-none ${big ? "text-xl" : "text-md"}`}
+      className={`w-full outline-none overflow-hidden text-ellipsis ${big ? "text-xl" : "text-md"}`}
       placeholder="Add a title here..."
       ref={input}
       defaultValue={value}
@@ -128,6 +128,8 @@ export function Description({
     value,
   });
   const input = useRef<HTMLTextAreaElement>(null);
+  const [focused, setFocused] = useState(false);
+  const { overflowing } = useIsOverflowing(input, input.current?.value);
 
   const { visible, idle } = useIdleContext();
   useEffect(() => {
@@ -140,13 +142,22 @@ export function Description({
   }, [value]);
 
   return (
-    <textarea
-      ref={input}
-      className={`w-full outline-none border-b-2 resize-none ${className}`}
-      placeholder="Add notes here..."
-      defaultValue={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-    ></textarea>
+    <div className={`relative h-fit ${className}`}>
+      <textarea
+        ref={input}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className="h-full w-full outline-none resize-none"
+        placeholder="Add notes here..."
+        defaultValue={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {!focused && overflowing && (
+        <label className="absolute bottom-0 right-2 p-2 italic text-sm bg-background">
+          scroll for more...
+        </label>
+      )}
+    </div>
   );
 }
 
@@ -188,19 +199,17 @@ export function DueDate({
         onClick={() => setEditing(true)}
       >
         {value ? (
-          <>
-            {!short && <p>Due on {format(value, "MMM do, yyyy")}</p>}
-            <p
-              className={
-                short
-                  ? "text-xs text-nowrap rotate-315 translate-y-[50%]"
-                  : "italic"
-              }
-            >
-              {short ? "in " : "Due in "}
-              {formatDistanceToNowStrict(value)}
-            </p>
-          </>
+          <p
+            className={
+              short ? "text-xs text-nowrap rotate-315 translate-y-[50%]" : ""
+            }
+          >
+            {!short && <span>Due on {format(value, "MMM do, yyyy")}</span>}
+            <span className={short ? "" : "italic"}>
+              {!short && " ("}in {formatDistanceToNowStrict(value)}
+              {!short && ")"}
+            </span>
+          </p>
         ) : (
           <p className="italic">No due date</p>
         )}

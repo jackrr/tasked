@@ -82,7 +82,7 @@ export default function TaskDetailModal({
           </button>
         </div>
 
-        <div className="grid grid-cols-3 mb-2">
+        <div className="border-b-1 pb-1 grid grid-cols-3 mb-2">
           {STATUS_ORDER.map((s) => {
             const current = task.status === s;
             return (
@@ -108,7 +108,7 @@ export default function TaskDetailModal({
           entityId={task.id}
           entityType={"tasks"}
           value={task.description}
-          className="border-none mt-2 grow"
+          className="mt-2 mb-4 grow"
         />
         <DueDate showEmpty taskId={task.id} value={task.dueDate} />
         <h3 className="mt-4 mb-1 pr-6 border-b w-fit">Projects</h3>

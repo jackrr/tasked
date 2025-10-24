@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 
 export function usePageTitle(title?: string | null) {
   // For some reason, <Head> tag expose by next.js doesn't seem to work
@@ -33,4 +33,30 @@ export function useDebounce<T>(
       setDebouncedVal(newValue);
     },
   };
+}
+
+export function useIsOverflowing<T extends HTMLElement>(
+  ref: RefObject<T | null>,
+  key: any,
+) {
+  // Key is an arbitrary value to trigger recalculation
+  const [data, setData] = useState({
+    overflowing: false,
+    overflowingX: false,
+    overflowingY: false,
+  });
+
+  useEffect(() => {
+    if (!ref?.current) return;
+
+    const overflowingX = ref.current.scrollWidth > ref.current.clientWidth;
+    const overflowingY = ref.current.scrollHeight > ref.current.clientHeight;
+    setData({
+      overflowingX,
+      overflowingY,
+      overflowing: overflowingX || overflowingY,
+    });
+  }, [key]);
+
+  return data;
 }

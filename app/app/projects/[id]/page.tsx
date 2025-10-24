@@ -74,7 +74,7 @@ export default function Project() {
   return (
     <>
       <div className="h-full w-full p-4 grid gap-4 grid-cols-1 md:grid-cols-2 overflow-hidden">
-        <div className="h-full grid gap-4 grid-rows-[28px_1fr] overflow-y-auto">
+        <div className="h-full flex gap-4 flex-col">
           <Title
             big
             value={project?.title}
@@ -85,6 +85,7 @@ export default function Project() {
             value={project?.description}
             entityId={id}
             entityType="projects"
+            className="grow"
           />
         </div>
         <div className="overflow-x-hidden overflow-y-auto relative">
