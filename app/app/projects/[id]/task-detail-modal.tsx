@@ -130,7 +130,7 @@ export default function TaskDetailModal({
                 <Link href={`/projects/${p.id}`}>
                   <Button
                     onClick={() => {}}
-                    className={`inline ${currentProject ? "opacity-60" : ""}`}
+                    className={`inline ${currentProject ? "opacity-60" : ""} max-w-42 text-nowrap overflow-hidden text-ellipsis`}
                   >
                     {p.title}
                   </Button>
