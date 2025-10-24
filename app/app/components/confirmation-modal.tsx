@@ -11,14 +11,20 @@ export default function ConfirmationModal({
   header: string;
   confirm: () => void;
 }) {
-  // TODO: style me!
   return (
     <Modal {...modalProps} toggleOpen={toggleOpen}>
-      <h1>{header}</h1>
+      <h1 className="mb-4 pr-4 border-b-2 w-fit">{header}</h1>
       <p>This action cannot be undone.</p>
-      <div className="flex space-beteween">
-        <Button onClick={() => toggleOpen(false)}>Nevermind</Button>
-        <Button onClick={confirm}>Do it!</Button>
+      <div className="mt-4 mx-4 flex justify-between">
+        <Button className="px-4 mr-6" onClick={() => toggleOpen(false)}>
+          Nevermind
+        </Button>
+        <Button
+          className="px-8 border-red-600 text-red-600 font-bold"
+          onClick={confirm}
+        >
+          Do it!
+        </Button>
       </div>
     </Modal>
   );

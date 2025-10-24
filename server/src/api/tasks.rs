@@ -57,7 +57,7 @@ async fn delete_task(
 #[patch("/tasks/<id>", format = "json", data = "<task>")]
 async fn edit_task(
     id: &str,
-    task: Json<EditTaskPayload<'_>>,
+    task: Json<EditTaskPayload>,
     db: &State<DatabaseConnection>,
     feed: &State<FeedWriter>,
 ) -> Result<Json<TaskModel>> {

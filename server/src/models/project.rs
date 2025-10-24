@@ -20,23 +20,23 @@ pub async fn create_project(db: &DatabaseConnection, title: String) -> Result<Pr
 }
 
 #[derive(Deserialize)]
-pub struct EditProjectPayload<'r> {
-    title: Option<&'r str>,
-    description: Option<&'r str>,
+pub struct EditProjectPayload {
+    title: Option<String>,
+    description: Option<String>,
 }
 
 pub async fn edit_project(
     db: &DatabaseConnection,
     id: &Uuid,
-    payload: Json<EditProjectPayload<'_>>,
+    payload: Json<EditProjectPayload>,
 ) -> Result<ProjectModel> {
     let proj = ProjectActiveModel {
         id: ActiveValue::Set(id.clone()),
-        title: match payload.title {
+        title: match payload.title.clone() {
             Some(title) => ActiveValue::Set(title.to_owned()),
             None => ActiveValue::NotSet,
         },
-        description: match payload.description {
+        description: match payload.description.clone() {
             Some(description) => ActiveValue::Set(Some(description.to_owned())),
             None => ActiveValue::NotSet,
         },

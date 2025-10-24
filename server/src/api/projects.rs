@@ -73,17 +73,17 @@ async fn project_stats(
 
 // Create a new project with the given title
 #[derive(Deserialize)]
-struct CreateProjectPayload<'r> {
-    title: &'r str,
+struct CreateProjectPayload {
+    title: String,
 }
 
 #[post("/projects", format = "json", data = "<project>")]
 async fn create_project(
-    project: Json<CreateProjectPayload<'_>>,
+    project: Json<CreateProjectPayload>,
     db: &State<DatabaseConnection>,
     feed: &State<FeedWriter>,
 ) -> Result<Json<ProjectModel>> {
-    let project = project::create_project(db.inner(), project.title.to_owned()).await?;
+    let project = project::create_project(db.inner(), project.title.clone()).await?;
     UpdateEvent::broadcast(
         feed.inner(),
         UpdateKind::Create,
@@ -105,12 +105,11 @@ async fn get_project(id: &str, db: &State<DatabaseConnection>) -> Result<Json<Pr
     }
 }
 
-// FIXME: support newline, quote characters in descriptions !?
 // Edit field<>value pair(s) on project
 #[patch("/projects/<id>", format = "json", data = "<project>")]
 async fn edit_project(
     id: &str,
-    project: Json<EditProjectPayload<'_>>,
+    project: Json<EditProjectPayload>,
     db: &State<DatabaseConnection>,
     feed: &State<FeedWriter>,
 ) -> Result<Json<ProjectModel>> {
@@ -161,20 +160,20 @@ async fn get_project_tasks(
 
 // Create a new task and add to project with the given id
 #[derive(Deserialize)]
-struct CreateTaskPayload<'r> {
-    title: &'r str,
+struct CreateTaskPayload {
+    title: String,
 }
 
 #[post("/projects/<id>/tasks", format = "json", data = "<task>")]
 async fn create_task_in_project(
     id: &str,
-    task: Json<CreateTaskPayload<'_>>,
+    task: Json<CreateTaskPayload>,
     db: &State<DatabaseConnection>,
     feed: &State<FeedWriter>,
 ) -> Result<Json<TaskModel>> {
     let id = parse_uuid(id)?;
     let task =
-        task::create_task_in_project(db.inner(), task.title.to_owned(), task::Status::Todo, &id)
+        task::create_task_in_project(db.inner(), task.title.clone(), task::Status::Todo, &id)
             .await?;
     UpdateEvent::broadcast(
         feed.inner(),
@@ -352,6 +351,70 @@ mod test {
         let project: ProjectModel = serde_json::from_str(&response_str).expect("The Project");
         assert_eq!(project.title, "A project");
         assert_eq!(project.description, Some("A description!".to_string()));
+    }
+
+    #[rocket::async_test]
+    async fn test_edit_project_multiline_text() {
+        let db = test_helpers::db_conn().await.unwrap();
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .patch(uri!(super::edit_project(project.id.to_string())))
+            .header(ContentType::JSON)
+            .body(
+                r#"{
+                  "description": "A description!\n\n\nwith many lines"
+                }"#,
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let project: ProjectModel = serde_json::from_str(&response_str).expect("The Project");
+        assert_eq!(project.title, "A project");
+        assert_eq!(
+            project.description,
+            Some(
+                r#"A description!
+
+
+with many lines"#
+                    .to_string()
+            )
+        );
+    }
+
+    #[rocket::async_test]
+    async fn test_edit_project_special_chars() {
+        let db = test_helpers::db_conn().await.unwrap();
+        let project = project::create_project(&db, "A project".to_string())
+            .await
+            .unwrap();
+        let client = test_helpers::init_server(Some(db)).await.unwrap();
+        let response = client
+            .patch(uri!(super::edit_project(project.id.to_string())))
+            .header(ContentType::JSON)
+            .body(
+                r#"{
+                  "description": "A description with the occasional escaped quote\" like these\" wow!"
+                }"#,
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        let response_str = response.into_string().await.unwrap();
+        let project: ProjectModel = serde_json::from_str(&response_str).expect("The Project");
+        assert_eq!(project.title, "A project");
+        assert_eq!(
+            project.description,
+            Some(
+                r#"A description with the occasional escaped quote" like these" wow!"#.to_string()
+            )
+        );
     }
 
     #[rocket::async_test]

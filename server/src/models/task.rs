@@ -58,35 +58,35 @@ pub async fn create_task(
 }
 
 #[derive(Deserialize)]
-pub struct EditTaskPayload<'r> {
-    title: Option<&'r str>,
-    description: Option<&'r str>,
-    status: Option<&'r str>,
-    due_date: Option<&'r str>,
+pub struct EditTaskPayload {
+    title: Option<String>,
+    description: Option<String>,
+    status: Option<String>,
+    due_date: Option<String>,
 }
 
 pub async fn edit_task(
     db: &DatabaseConnection,
     id: &Uuid,
-    payload: Json<EditTaskPayload<'_>>,
+    payload: Json<EditTaskPayload>,
 ) -> Result<TaskModel> {
     let task = TaskActiveModel {
         id: ActiveValue::Set(id.clone()),
-        title: match payload.title {
-            Some(title) => ActiveValue::Set(title.to_owned()),
+        title: match payload.title.clone() {
+            Some(title) => ActiveValue::Set(title),
             None => ActiveValue::NotSet,
         },
-        description: match payload.description {
-            Some(description) => ActiveValue::Set(Some(description.to_owned())),
+        description: match payload.description.clone() {
+            Some(description) => ActiveValue::Set(Some(description)),
             None => ActiveValue::NotSet,
         },
-        status: match payload.status {
+        status: match payload.status.clone() {
             // Parse and re-stringify to validate
-            Some(status) => ActiveValue::Set(Status::parse(status)?.to_string()),
+            Some(status) => ActiveValue::Set(Status::parse(&status)?.to_string()),
             None => ActiveValue::NotSet,
         },
-        due_date: match payload.due_date {
-            Some(due_date) => ActiveValue::Set(Some(Date::parse_from_str(due_date, "%Y-%m-%d")?)),
+        due_date: match payload.due_date.clone() {
+            Some(due_date) => ActiveValue::Set(Some(Date::parse_from_str(&due_date, "%Y-%m-%d")?)),
             None => ActiveValue::NotSet,
         },
         ..Default::default()
@@ -146,8 +146,8 @@ pub async fn clear_fields(
         id: ActiveValue::Set(id.clone()),
         title: ActiveValue::NotSet,
         status: ActiveValue::NotSet,
-        description: description,
-        due_date: due_date,
+        description,
+        due_date,
         ..Default::default()
     };
 

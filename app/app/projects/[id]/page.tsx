@@ -91,7 +91,7 @@ export default function Project() {
         <div className="overflow-y-scroll relative">
           <Button
             onClick={() => addTask.mutate({ title: "", projectId: id })}
-            className="sticky top-0 bg-background"
+            className="sticky top-0 bg-background z-100"
           >
             + Add task
           </Button>

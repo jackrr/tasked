@@ -136,7 +136,7 @@ export function Description({
     <textarea
       ref={input}
       className={`w-full outline-none border-b-2 resize-none ${className}`}
-      placeholder="Add a description here..."
+      placeholder="Add notes here..."
       defaultValue={value || ""}
       onChange={(e) => onChange(e.target.value)}
     ></textarea>
