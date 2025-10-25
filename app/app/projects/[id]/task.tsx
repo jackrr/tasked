@@ -102,7 +102,7 @@ export default function Task({
               key={t.id}
               onClick={() => selectTask.mutate({ taskId: t.id, projectId })}
             >
-              + Add task <em>"{t.title}"</em> to this project
+              + Add task <em>&ldquo;{t.title}&rdquo;</em> to this project
             </li>
           ))}
         </ul>
