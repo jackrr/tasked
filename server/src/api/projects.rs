@@ -43,25 +43,17 @@ async fn project_stats(
 
     let stats: Vec<ProjectStats> = ProjectStats::find_by_statement(raw_sql!(
         Sqlite,
-        r#"SELECT p.id as id,
-             count(distinct ct.id) as complete,
-             count(distinct it.id) as in_progress,
-             count(distinct tt.id) as todo,
-             count(distinct t.id) as total
-           FROM project p
-           -- complete tasks
-           LEFT JOIN task_project ctp on ctp.project_id = p.id
-           LEFT JOIN task ct on ctp.task_id = ct.id and ct.status = 'complete'
-           -- todo tasks
-           LEFT JOIN task_project ttp on ttp.project_id = p.id
-           LEFT JOIN task tt on ttp.task_id = tt.id and tt.status = 'todo'
-           -- in_progress tasks
-           LEFT JOIN task_project itp on itp.project_id = p.id
-           LEFT JOIN task it on itp.task_id = it.id and it.status = 'in_progress'
-           LEFT JOIN task_project tp on tp.project_id = p.id
-           LEFT JOIN task t on tp.task_id = t.id
+        r#"select
+	           p.id as id,
+	           COUNT(CASE WHEN t.status = 'todo' THEN 1 ELSE NULL END) AS todo,
+	           COUNT(CASE WHEN t.status = 'in_progress' THEN 1 ELSE NULL END) AS in_progress,
+	           COUNT(CASE WHEN t.status = 'complete' THEN 1 ELSE NULL END) AS complete,
+	           count(*) as total
+	         from project p
+	         left join task_project tp on tp.project_id = p.id
+	         left join task t on tp.task_id = t.id
            WHERE "p"."id" IN ({..ids})
-           GROUP BY p.id, p.created_at
+	         group by p.id, p.created_at
            ORDER BY p.created_at
         "#
     ))
